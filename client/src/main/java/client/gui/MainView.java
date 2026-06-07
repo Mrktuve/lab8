@@ -16,6 +16,7 @@ import javafx.stage.Stage;
 import java.time.LocalDate;
 import java.util.List;
 
+import static common.enums.Status.*;
 
 
 /**
@@ -235,12 +236,17 @@ public class MainView {
     private void handleEdit(Worker worker) {
         WorkerDialog dialog = new WorkerDialog(localization, worker);
         dialog.showAndWait().ifPresent(updatedWorker -> {
-            var response = clientService.updateWorker(worker.getId(), updatedWorker);
-            if (response.isSuccess()) {
-                refreshCollection();
-                showSuccess(localization.get("success.update"));
+            Long workerId = worker.getId();
+            if (workerId != null) {
+                var response = clientService.updateWorker(workerId, updatedWorker);
+                if (response.isSuccess()) {
+                    refreshCollection();
+                    showSuccess(localization.get("success.update"));
+                } else {
+                    showError(response.getMessage());
+                }
             } else {
-                showError(response.getMessage());
+                showError("Worker ID is null");
             }
         });
     }

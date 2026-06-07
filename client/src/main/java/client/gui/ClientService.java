@@ -6,7 +6,6 @@ import common.network.Request;
 import common.network.Response;
 import common.commands.*;
 import common.enums.*;
-
 import java.io.IOException;
 import java.util.List;
 
@@ -34,7 +33,6 @@ public class ClientService {
             Command showCommand = new Show();
             Request request = new Request(showCommand, session.getLogin(), session.getPassword());
             Response response = networkClient.sendRequest(request);
-
             if (response.isSuccess() && response.getData() != null) {
                 return (List<Worker>) response.getData();
             } else {
@@ -61,7 +59,7 @@ public class ClientService {
     }
 
     /**
-     * Добавляет если больше максимального.
+     * Добавляет работника, если его значение больше максимального.
      */
     public Response addIfMax(Worker worker) {
         try {
@@ -78,9 +76,8 @@ public class ClientService {
      */
     public Response updateWorker(long id, Worker worker) {
         try {
-            // Устанавливаем ID в объекте worker
-            // Предполагаем, что у Worker есть setId() или конструктор с ID
-            Command updateCommand = new Update(id, worker);
+            // Используем UpdateId вместо Update
+            Command updateCommand = new UpdateId(id, worker);
             Request request = new Request(updateCommand, session.getLogin(), session.getPassword());
             return networkClient.sendRequest(request);
         } catch (IOException e) {
@@ -128,38 +125,12 @@ public class ClientService {
     }
 
     /**
-     * Удаляет элементы меньше заданного.
-     */
-    public Response removeLower(Worker worker) {
-        try {
-            Command removeLowerCommand = new RemoveLower(worker);
-            Request request = new Request(removeLowerCommand, session.getLogin(), session.getPassword());
-            return networkClient.sendRequest(request);
-        } catch (IOException e) {
-            return new Response(false, localization.get("error.network") + ": " + e.getMessage());
-        }
-    }
-
-    /**
      * Фильтрует по началу имени.
      */
     public Response filterStartsWithName(String name) {
         try {
             Command filterCommand = new FilterStartsWithName(name);
             Request request = new Request(filterCommand, session.getLogin(), session.getPassword());
-            return networkClient.sendRequest(request);
-        } catch (IOException e) {
-            return new Response(false, localization.get("error.network") + ": " + e.getMessage());
-        }
-    }
-
-    /**
-     * Печатает по убыванию.
-     */
-    public Response printDescending() {
-        try {
-            Command printCommand = new PrintDescending();
-            Request request = new Request(printCommand, session.getLogin(), session.getPassword());
             return networkClient.sendRequest(request);
         } catch (IOException e) {
             return new Response(false, localization.get("error.network") + ": " + e.getMessage());
