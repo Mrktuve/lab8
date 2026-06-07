@@ -21,6 +21,7 @@ public class NetworkClient implements AutoCloseable {
     private Socket socket;
     private ObjectOutputStream out;
     private ObjectInputStream in;
+    private boolean connected = false;
 
     /**
      * Создаёт менеджер и устанавливает соединение с сервером по указанному хосту и порту.
@@ -44,13 +45,24 @@ public class NetworkClient implements AutoCloseable {
         socket = new Socket(host, port);
         socket.setSoTimeout(TIMEOUT);
 
-        // Создаём потоки для сериализации объектов
+        // Создаём только выходной поток (ObjectOutputStream отправляет заголовок автоматически)
         out = new ObjectOutputStream(socket.getOutputStream());
-        out.flush(); // Важно: flush после создания ObjectOutputStream
+        out.flush();
 
-        in = new ObjectInputStream(socket.getInputStream());
+        // ObjectInputStream создаём лениво - при первом чтении
+        // Это предотвращает deadlock с сервером
 
+        connected = true;
         System.out.println("Connected to " + host + ":" + port);
+    }
+
+    /**
+     * Инициализирует входной поток при необходимости.
+     */
+    private void ensureInputStream() throws IOException {
+        if (in == null && socket != null) {
+            in = new ObjectInputStream(socket.getInputStream());
+        }
     }
 
     /**
@@ -65,6 +77,9 @@ public class NetworkClient implements AutoCloseable {
             // Отправляем запрос
             out.writeObject(request);
             out.flush();
+
+            // Инициализируем входной поток при необходимости
+            ensureInputStream();
 
             // Читаем ответ
             Response response = (Response) in.readObject();
@@ -81,7 +96,7 @@ public class NetworkClient implements AutoCloseable {
      * @return true если соединение активно
      */
     public boolean isConnected() {
-        return socket != null && socket.isConnected() && !socket.isClosed();
+        return connected && socket != null && !socket.isClosed();
     }
 
     /**
@@ -100,6 +115,7 @@ public class NetworkClient implements AutoCloseable {
                 socket.close();
                 System.out.println("Closed connection to " + host + ":" + port);
             }
+            connected = false;
         } catch (IOException e) {
             e.printStackTrace();
         }
