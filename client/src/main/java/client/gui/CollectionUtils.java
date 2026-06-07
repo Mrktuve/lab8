@@ -70,7 +70,7 @@ public class CollectionUtils {
      */
     private static String formatStatus(Status status, Localization loc) {
         return switch (status) {
-            case HIRED -> loc.get("status.hired");
+            case RECOMMENDED_FOR_PROMOTION -> loc.get("status.recommended_for_promotion");
             case FIRED -> loc.get("status.fired");
             case REGULAR -> loc.get("status.regular");
             case PROBATION -> loc.get("status.probation");

@@ -16,7 +16,6 @@ import javafx.stage.Stage;
 import java.time.LocalDate;
 import java.util.List;
 
-import static common.enums.Status.*;
 
 
 /**
@@ -198,7 +197,7 @@ public class MainView {
         return panel;
     }
 
-    private String formatStatus(status) {
+    private String formatStatus(Status status) {
         return switch (status) {
             case FIRED -> localization.get("status.fired");
             case RECOMMENDED_FOR_PROMOTION -> localization.get("status.recommended_for_promotion");
