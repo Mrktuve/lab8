@@ -5,7 +5,6 @@ import java.util.ResourceBundle;
 
 /**
  * Управляет локализацией интерфейса.
- * Поддерживает языки: русский, эстонский, литовский, испанский (Коста-Рика).
  */
 public class Localization {
 
@@ -16,11 +15,6 @@ public class Localization {
         setLocale("ru");
     }
 
-    /**
-     * Устанавливает локаль по коду языка.
-     *
-     * @param localeCode код языка: "ru", "et", "lt", "es_CR"
-     */
     public void setLocale(String localeCode) {
         this.currentLocale = localeCode;
 
@@ -31,13 +25,9 @@ public class Localization {
             default -> new Locale("ru", "RU");
         };
 
-        // Загружаем ресурсный файл messages_{locale}.properties
         this.bundle = ResourceBundle.getBundle("messages", locale);
     }
 
-    /**
-     * Возвращает строку по ключу для текущей локали.
-     */
     public String get(String key) {
         try {
             return bundle.getString(key);
@@ -46,17 +36,11 @@ public class Localization {
         }
     }
 
-    /**
-     * Возвращает строку по ключу с параметрами.
-     */
     public String get(String key, Object... args) {
         String pattern = get(key);
         return String.format(pattern, args);
     }
 
-    /**
-     * Возвращает текущий код локали.
-     */
     public String getCurrentLocale() {
         return currentLocale;
     }

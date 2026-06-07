@@ -2,6 +2,7 @@ package client.gui;
 
 import client.NetworkClient;
 import common.model.*;
+import common.enums.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -12,10 +13,13 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
+import java.time.LocalDate;
 import java.util.List;
 
+
+
 /**
- * Главный экран приложения с таблицей работников и панелью визуализации.
+ * Главный экран приложения.
  */
 public class MainView {
 
@@ -39,19 +43,11 @@ public class MainView {
         this.clientService = new ClientService(networkClient, session, localization);
     }
 
-    /**
-     * Создает и показывает главный экран.
-     */
     public void show() {
         BorderPane root = new BorderPane();
 
-        // Верхняя панель с кнопками
         VBox topPanel = createTopPanel();
-
-        // Таблица работников
         tableView = createTableView();
-
-        // Нижняя панель с canvas и информацией
         HBox bottomPanel = createBottomPanel();
 
         root.setTop(topPanel);
@@ -64,7 +60,6 @@ public class MainView {
         stage.setMaximized(true);
         stage.show();
 
-        // Загружаем коллекцию при старте
         refreshCollection();
     }
 
@@ -73,12 +68,14 @@ public class MainView {
         panel.setPadding(new Insets(10));
         panel.setStyle("-fx-background-color: #d3d3d3;");
 
-        // Панель с кнопками управления
         HBox buttonBox = new HBox(10);
         buttonBox.setAlignment(Pos.CENTER);
 
         Button addButton = new Button(localization.get("button.add"));
         addButton.setOnAction(e -> handleAdd());
+
+        Button addIfMaxButton = new Button(localization.get("button.add_if_max"));
+        addIfMaxButton.setOnAction(e -> handleAddIfMax());
 
         Button updateButton = new Button(localization.get("button.update"));
         updateButton.setOnAction(e -> handleUpdate());
@@ -101,10 +98,9 @@ public class MainView {
         Button logoutButton = new Button(localization.get("button.logout"));
         logoutButton.setOnAction(e -> handleLogout());
 
-        buttonBox.getChildren().addAll(addButton, updateButton, removeButton, clearButton,
-                refreshButton, infoButton, helpButton, logoutButton);
+        buttonBox.getChildren().addAll(addButton, addIfMaxButton, updateButton, removeButton,
+                clearButton, refreshButton, infoButton, helpButton, logoutButton);
 
-        // Панель с фильтром
         HBox filterBox = new HBox(10);
         filterBox.setAlignment(Pos.CENTER);
 
@@ -125,7 +121,6 @@ public class MainView {
         observableList = FXCollections.observableArrayList();
         tableView.setItems(observableList);
 
-        // Колонки
         TableColumn<Worker, Long> idCol = new TableColumn<>("ID");
         idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
         idCol.setPrefWidth(50);
@@ -142,7 +137,7 @@ public class MainView {
         dateCol.setCellValueFactory(cellData -> {
             var date = cellData.getValue().getCreationDate();
             return new javafx.beans.property.SimpleStringProperty(
-                    date != null ? Formats.formatDate(date, localization.getCurrentLocale()) : ""
+                    date != null ? Formats.formatDate(LocalDate.from(date), localization.getCurrentLocale()) : ""
             );
         });
         dateCol.setPrefWidth(100);
@@ -151,10 +146,10 @@ public class MainView {
         statusCol.setCellValueFactory(cellData -> {
             var status = cellData.getValue().getStatus();
             return new javafx.beans.property.SimpleStringProperty(
-                    status != null ? localization.get("status." + status.name().toLowerCase()) : ""
+                    status != null ? formatStatus(status) : ""
             );
         });
-        statusCol.setPrefWidth(100);
+        statusCol.setPrefWidth(150);
 
         TableColumn<Worker, String> ownerCol = new TableColumn<>(localization.get("worker.owner"));
         ownerCol.setCellValueFactory(new PropertyValueFactory<>("ownerLogin"));
@@ -162,7 +157,6 @@ public class MainView {
 
         tableView.getColumns().addAll(idCol, nameCol, salaryCol, dateCol, statusCol, ownerCol);
 
-        // Двойной клик для редактирования
         tableView.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2) {
                 Worker selected = tableView.getSelectionModel().getSelectedItem();
@@ -179,12 +173,10 @@ public class MainView {
         HBox panel = new HBox(10);
         panel.setPadding(new Insets(10));
 
-        // Canvas для визуализации
         canvasPanel = new CanvasPanel(localization);
         canvasPanel.setPrefSize(400, 300);
         canvasPanel.setStyle("-fx-border-color: black; -fx-border-width: 1;");
 
-        // Информационная панель
         VBox infoBox = new VBox(5);
         infoBox.setPrefWidth(400);
 
@@ -205,7 +197,15 @@ public class MainView {
         return panel;
     }
 
-    // Обработчики кнопок
+    private String formatStatus(status) {
+        return switch (status) {
+            case FIRED -> localization.get("status.fired");
+            case RECOMMENDED_FOR_PROMOTION -> localization.get("status.recommended_for_promotion");
+            case REGULAR -> localization.get("status.regular");
+            case PROBATION -> localization.get("status.probation");
+        };
+    }
+
     private void handleAdd() {
         WorkerDialog dialog = new WorkerDialog(localization, null);
         dialog.showAndWait().ifPresent(worker -> {
@@ -213,6 +213,19 @@ public class MainView {
             if (response.isSuccess()) {
                 refreshCollection();
                 showSuccess(localization.get("success.add"));
+            } else {
+                showError(response.getMessage());
+            }
+        });
+    }
+
+    private void handleAddIfMax() {
+        WorkerDialog dialog = new WorkerDialog(localization, null);
+        dialog.showAndWait().ifPresent(worker -> {
+            var response = clientService.addIfMax(worker);
+            if (response.isSuccess()) {
+                refreshCollection();
+                showSuccess(localization.get("success.add_if_max"));
             } else {
                 showError(response.getMessage());
             }
@@ -298,16 +311,20 @@ public class MainView {
             return;
         }
 
-        List<Worker> filtered = CollectionUtils.filterStartsWithName(
-                observableList.getAll(), name
-        );
-        observableList.setAll(filtered);
-        canvasPanel.setWorkers(filtered);
+        var response = clientService.filterStartsWithName(name);
+        if (response.isSuccess() && response.getData() != null) {
+            @SuppressWarnings("unchecked")
+            List<Worker> filtered = (List<Worker>) response.getData();
+            observableList.setAll(filtered);
+            canvasPanel.setWorkers(filtered);
+        }
     }
 
     private void showInfo() {
-        List<Worker> workers = observableList.getAll();
-        updateInfo(workers);
+        var response = clientService.info();
+        if (response.isSuccess()) {
+            infoArea.setText(response.getMessage());
+        }
     }
 
     private void showHelp() {
@@ -329,7 +346,6 @@ public class MainView {
             session.clear();
             networkClient.close();
 
-            // Возвращаемся к окну авторизации
             try {
                 NetworkClient newClient = new NetworkClient("localhost", 2222);
                 Session newSession = new Session();

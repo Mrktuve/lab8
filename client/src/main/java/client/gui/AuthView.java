@@ -3,6 +3,8 @@ package client.gui;
 import client.NetworkClient;
 import common.network.Request;
 import common.network.Response;
+import common.commands.Login;
+import common.commands.Register;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -12,7 +14,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 /**
- * Экран авторизации и регистрации пользователя.
+ * Экран авторизации и регистрации.
  */
 public class AuthView {
 
@@ -24,8 +26,6 @@ public class AuthView {
     private TextField loginField;
     private PasswordField passwordField;
     private Label errorLabel;
-    private Button loginButton;
-    private Button registerButton;
     private ComboBox<String> languageSelector;
 
     public AuthView(Stage stage, NetworkClient networkClient, Localization localization, Session session) {
@@ -35,16 +35,12 @@ public class AuthView {
         this.session = session;
     }
 
-    /**
-     * Создаёт и показывает окно авторизации.
-     */
     public void show() {
         VBox root = new VBox(15);
         root.setAlignment(Pos.CENTER);
         root.setPadding(new Insets(30));
         root.setStyle("-fx-background-color: #f0f0f0;");
 
-        // Заголовок
         Label titleLabel = new Label(localization.get("auth.title"));
         titleLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
 
@@ -68,11 +64,11 @@ public class AuthView {
         passwordField.setPrefWidth(300);
 
         // Кнопки
-        loginButton = new Button(localization.get("auth.login.button"));
+        Button loginButton = new Button(localization.get("auth.login.button"));
         loginButton.setPrefWidth(140);
         loginButton.setOnAction(e -> handleLogin());
 
-        registerButton = new Button(localization.get("auth.register.button"));
+        Button registerButton = new Button(localization.get("auth.register.button"));
         registerButton.setPrefWidth(140);
         registerButton.setOnAction(e -> handleRegister());
 
@@ -80,7 +76,6 @@ public class AuthView {
         buttonBox.setAlignment(Pos.CENTER);
         buttonBox.getChildren().addAll(loginButton, registerButton);
 
-        // Ошибки
         errorLabel = new Label();
         errorLabel.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
         errorLabel.setWrapText(true);
@@ -95,9 +90,6 @@ public class AuthView {
         stage.show();
     }
 
-    /**
-     * Обрабатывает попытку входа в систему.
-     */
     private void handleLogin() {
         String login = loginField.getText().trim();
         String password = passwordField.getText().trim();
@@ -108,12 +100,13 @@ public class AuthView {
         }
 
         try {
-            Request request = new Request("login", login, password, null);
+            Request request = new Request(new Login(), login, password);
             Response response = networkClient.sendRequest(request);
 
             if (response.isSuccess()) {
                 session.setLogin(login);
-                showError(""); // Очищаем ошибки
+                session.setPassword(password);
+                showError("");
                 openMainView();
             } else {
                 showError(response.getMessage());
@@ -123,9 +116,6 @@ public class AuthView {
         }
     }
 
-    /**
-     * Обрабатывает попытку регистрации.
-     */
     private void handleRegister() {
         String login = loginField.getText().trim();
         String password = passwordField.getText().trim();
@@ -136,7 +126,7 @@ public class AuthView {
         }
 
         try {
-            Request request = new Request("register", login, password, null);
+            Request request = new Request(new Register(), login, password);
             Response response = networkClient.sendRequest(request);
 
             if (response.isSuccess()) {
@@ -150,9 +140,6 @@ public class AuthView {
         }
     }
 
-    /**
-     * Переключает язык интерфейса.
-     */
     private void changeLanguage() {
         String selected = languageSelector.getValue();
         String langCode = switch (selected) {
@@ -163,27 +150,18 @@ public class AuthView {
         };
 
         localization.setLocale(langCode);
-        show(); // Перерисовываем окно
+        show();
     }
 
-    /**
-     * Открывает главное окно приложения.
-     */
     private void openMainView() {
         MainView mainView = new MainView(stage, networkClient, localization, session);
         mainView.show();
     }
 
-    /**
-     * Показывает сообщение об ошибке.
-     */
     private void showError(String message) {
         errorLabel.setText(message);
     }
 
-    /**
-     * Показывает диалоговое окно.
-     */
     private void showAlert(String message, Alert.AlertType type) {
         Alert alert = new Alert(type);
         alert.setTitle(localization.get("dialog.title"));

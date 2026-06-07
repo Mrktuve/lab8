@@ -1,17 +1,14 @@
 package client.gui;
 
+import common.*;
 import common.enums.*;
-import common.model.*;
+
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 
-import java.awt.*;
 import java.time.LocalDate;
 
 /**
@@ -22,7 +19,6 @@ public class WorkerDialog extends Dialog<Worker> {
     private final Localization localization;
     private final boolean editMode;
 
-    // Поля ввода
     private TextField nameField;
     private TextField xField;
     private TextField yField;
@@ -129,7 +125,6 @@ public class WorkerDialog extends Dialog<Worker> {
         grid.add(new Label(localization.get("worker.status") + ":"), 0, row);
         grid.add(statusComboBox, 1, row++);
 
-        // Поля Person
         Label personLabel = new Label(localization.get("worker.person") + ":");
         personLabel.setStyle("-fx-font-weight: bold;");
         grid.add(personLabel, 0, row++, 2, 1);
@@ -146,7 +141,6 @@ public class WorkerDialog extends Dialog<Worker> {
         grid.add(new Label(localization.get("person.nationality") + ":"), 0, row);
         grid.add(nationalityComboBox, 1, row);
 
-        // Если редактируем, заполняем поля
         if (worker != null) {
             fillFields(worker);
         }
@@ -182,33 +176,26 @@ public class WorkerDialog extends Dialog<Worker> {
         try {
             Worker worker = existingWorker != null ? existingWorker : new Worker();
 
-            // Name
             String name = nameField.getText().trim();
             if (name.isEmpty()) {
                 throw new IllegalArgumentException(localization.get("error.empty.name"));
             }
             worker.setName(name);
 
-            // Coordinates
             Double x = xField.getText().trim().isEmpty() ? null : Double.parseDouble(xField.getText().trim());
             Long y = yField.getText().trim().isEmpty() ? null : Long.parseLong(yField.getText().trim());
             if (x != null || y != null) {
                 worker.setCoordinates(new Coordinates(x, y));
             }
 
-            // Salary
             Double salary = salaryField.getText().trim().isEmpty() ? null :
                     Double.parseDouble(salaryField.getText().trim().replace(",", "."));
             worker.setSalary(salary);
 
-            // Dates
             worker.setStartDate(startDatePicker.getValue());
             worker.setEndDate(endDatePicker.getValue());
-
-            // Status
             worker.setStatus(statusComboBox.getValue());
 
-            // Person
             if (!personHeightField.getText().trim().isEmpty() ||
                     eyeColorComboBox.getValue() != null ||
                     hairColorComboBox.getValue() != null ||
