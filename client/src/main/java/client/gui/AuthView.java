@@ -47,11 +47,30 @@ public class AuthView {
         // Выбор языка
         HBox languageBox = new HBox(10);
         languageBox.setAlignment(Pos.CENTER);
+
         Label languageLabel = new Label(localization.get("auth.language") + ":");
+
         languageSelector = new ComboBox<>();
-        languageSelector.getItems().addAll("Русский", "Eesti", "Lietuvių", "Español (CR)");
-        languageSelector.setValue("Русский");
+        // Заполняем используя локализацию
+        languageSelector.getItems().addAll(
+                localization.get("lang.ru"),
+                localization.get("lang.et"),
+                localization.get("lang.lt"),
+                localization.get("lang.es")
+        );
+
+        // Выбираем текущий язык
+        String currentLang = localization.getCurrentLocale();
+        String selectedValue = switch (currentLang) {
+            case "et" -> localization.get("lang.et");
+            case "lt" -> localization.get("lang.lt");
+            case "es_CR" -> localization.get("lang.es");
+            default -> localization.get("lang.ru");
+        };
+        languageSelector.setValue(selectedValue);
+
         languageSelector.setOnAction(e -> changeLanguage());
+
         languageBox.getChildren().addAll(languageLabel, languageSelector);
 
         // Поля ввода
