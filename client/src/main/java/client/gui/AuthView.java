@@ -161,14 +161,23 @@ public class AuthView {
 
     private void changeLanguage() {
         String selected = languageSelector.getValue();
-        String langCode = switch (selected) {
-            case "Eesti" -> "et";
-            case "Lietuvių" -> "lt";
-            case "Español (CR)" -> "es_CR";
-            default -> "ru";
-        };
+
+        // Определяем язык по ВЫБРАННОМУ ЗНАЧЕНИЮ из ComboBox
+        String langCode;
+        if (selected.equals(localization.get("lang.et"))) {
+            langCode = "et";
+        } else if (selected.equals(localization.get("lang.lt"))) {
+            langCode = "lt";
+        } else if (selected.equals(localization.get("lang.es"))) {
+            langCode = "es_CR";
+        } else {
+            langCode = "ru";
+        }
 
         localization.setLocale(langCode);
+
+        // ПЕРЕСОЗДАЕМ окно с новой локализацией
+
         show();
     }
 
