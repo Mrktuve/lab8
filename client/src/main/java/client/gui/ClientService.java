@@ -30,17 +30,28 @@ public class ClientService {
     @SuppressWarnings("unchecked")
     public List<Worker> loadCollection() {
         try {
+            System.out.println("[ClientService] Loading collection...");
             Command showCommand = new Show();
             Request request = new Request(showCommand, session.getLogin(), session.getPassword());
+
+            System.out.println("[ClientService] Sending request: " + request);
             Response response = networkClient.sendRequest(request);
+
+            System.out.println("[ClientService] Response received: " + response);
+            System.out.println("[ClientService] Response success: " + response.isSuccess());
+            System.out.println("[ClientService] Response data: " + (response.getData() != null ? "NOT NULL" : "NULL"));
+
             if (response.isSuccess() && response.getData() != null) {
-                return (List<Worker>) response.getData();
+                List<Worker> workers = (List<Worker>) response.getData();
+                System.out.println("[ClientService] Loaded " + workers.size() + " workers");
+                return workers;
             } else {
-                System.err.println("Ошибка загрузки: " + response.getMessage());
+                System.err.println("[ClientService] Load failed: " + response.getMessage());
                 return null;
             }
-        } catch (IOException e) {
-            System.err.println("Сетевая ошибка: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("[ClientService] Exception: " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }

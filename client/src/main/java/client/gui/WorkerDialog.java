@@ -25,7 +25,6 @@ public class WorkerDialog extends Dialog<Worker> {
     private DatePicker startDatePicker;
     private DatePicker endDatePicker;
     private ComboBox<Status> statusComboBox;
-    private TextField personHeightField;
     private ComboBox<EyeColor> eyeColorComboBox;
     private ComboBox<HairColor> hairColorComboBox;
     private ComboBox<Country> nationalityComboBox;
@@ -64,8 +63,6 @@ public class WorkerDialog extends Dialog<Worker> {
         statusComboBox = new ComboBox<>();
         statusComboBox.getItems().addAll(Status.values());
         statusComboBox.setPromptText(localization.get("worker.status"));
-        personHeightField = new TextField();
-        personHeightField.setPromptText(localization.get("person.height"));
         eyeColorComboBox = new ComboBox<>();
         eyeColorComboBox.getItems().addAll(EyeColor.values());
         eyeColorComboBox.setPromptText(localization.get("person.eyeColor"));
@@ -106,8 +103,6 @@ public class WorkerDialog extends Dialog<Worker> {
         Label personLabel = new Label(localization.get("worker.person") + ":");
         personLabel.setStyle("-fx-font-weight: bold;");
         grid.add(personLabel, 0, row++, 2, 1);
-        grid.add(new Label(localization.get("person.height") + ":"), 0, row);
-        grid.add(personHeightField, 1, row++);
         grid.add(new Label(localization.get("person.eyeColor") + ":"), 0, row);
         grid.add(eyeColorComboBox, 1, row++);
         grid.add(new Label(localization.get("person.hairColor") + ":"), 0, row);
@@ -137,7 +132,6 @@ public class WorkerDialog extends Dialog<Worker> {
         }
         statusComboBox.setValue(worker.getStatus());
         if (worker.getPerson() != null) {
-            personHeightField.setText(String.valueOf(worker.getPerson().getHeight()));
             eyeColorComboBox.setValue(worker.getPerson().getEyeColor());
             hairColorComboBox.setValue(worker.getPerson().getHairColor());
             nationalityComboBox.setValue(worker.getPerson().getNationality());
@@ -174,15 +168,10 @@ public class WorkerDialog extends Dialog<Worker> {
             Status status = statusComboBox.getValue();
 
             Person person = null;
-            if (!personHeightField.getText().trim().isEmpty() ||
-                    eyeColorComboBox.getValue() != null ||
+            if (eyeColorComboBox.getValue() != null ||
                     hairColorComboBox.getValue() != null ||
                     nationalityComboBox.getValue() != null) {
-                // Person принимает Long height (не Float!)
-                Long height = personHeightField.getText().trim().isEmpty() ? null :
-                        Long.parseLong(personHeightField.getText().trim());
                 person = new Person(
-                        height,
                         eyeColorComboBox.getValue(),
                         hairColorComboBox.getValue(),
                         nationalityComboBox.getValue()

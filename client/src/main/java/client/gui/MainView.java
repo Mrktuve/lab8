@@ -299,15 +299,33 @@ public class MainView {
     }
 
     private void refreshCollection() {
-        List<Worker> workers = clientService.loadCollection();
-        if (workers != null) {
-            observableList.setAll(workers);
-            canvasPanel.setWorkers(workers);
-            updateInfo(workers);
-            showSuccess(localization.get("success.refresh"));
-        } else {
-            showError(localization.get("error.load.collection"));
+        System.out.println("[MainView] Refreshing collection...");
+
+        for (int i = 0; i < 3; i++) {
+            List<Worker> workers = clientService.loadCollection();
+
+            if (workers != null) {
+                System.out.println("[MainView] Successfully loaded " + workers.size() + " workers");
+                observableList.setAll(workers);
+                canvasPanel.setWorkers(workers);
+                updateInfo(workers);
+                showSuccess(localization.get("success.refresh"));
+                return;
+            }
+
+            System.err.println("[MainView] Attempt " + (i+1) + " failed");
+            if (i < 2) {
+                try {
+                    Thread.sleep(1000); // Ждем 1 секунду перед следующей попыткой
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
+
+        // Все попытки исчерпаны
+        System.err.println("[MainView] All attempts failed!");
+        showError(localization.get("error.load.collection"));
     }
 
     private void filterByName(String name) {

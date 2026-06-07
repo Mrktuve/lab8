@@ -50,7 +50,6 @@ public class CollectionUtils {
         Person person = worker.getPerson();
         if (person != null) {
             sb.append(loc.get("worker.person")).append(":\n");
-            sb.append("  - ").append(loc.get("person.height")).append(": ").append(person.getHeight()).append("\n");
             sb.append("  - ").append(loc.get("person.eyeColor")).append(": ")
                     .append(person.getEyeColor() != null ? person.getEyeColor().name() : "N/A").append("\n");
             sb.append("  - ").append(loc.get("person.hairColor")).append(": ")

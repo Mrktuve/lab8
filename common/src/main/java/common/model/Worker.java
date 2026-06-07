@@ -70,7 +70,6 @@ public class Worker implements Serializable {
         }
 
         Person person = new Person(
-                rs.getLong("person_height"),
                 EyeColor.valueOf(rs.getString("person_eye_color")),
                 HairColor.valueOf(rs.getString("person_hair_color")),
                 Country.valueOf(rs.getString("person_nationality"))
