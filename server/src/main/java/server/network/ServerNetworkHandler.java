@@ -3,21 +3,20 @@ package server.network;
 import common.network.Request;
 import common.network.Response;
 import server.core.CommandExecutor;
-
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ServerNetworkHandler {
-
     private final int port;
     private final CommandExecutor commandExecutor;
-    private final RequestReader requestReader = new RequestReader();
-    private final ResponseSender responseSender = new ResponseSender();
-    private final ExecutorService readPool = Executors.newFixedThreadPool(4);
-    private final ExecutorService sendPool = Executors.newCachedThreadPool();
+    private final ConcurrentHashMap<String, ClientHandler> clients = new ConcurrentHashMap<>();
+    private final ExecutorService pool = Executors.newCachedThreadPool();
 
     public ServerNetworkHandler(int port, CommandExecutor executor) {
         this.port = port;
@@ -25,38 +24,76 @@ public class ServerNetworkHandler {
     }
 
     public void start() {
-
         try (ServerSocket serverSocket = new ServerSocket(port)) {
-            System.out.println("Server started: " + port);
-            System.out.println("Waiting for clients...");
+            System.out.println("Server started on port " + port);
 
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("Client connected: " + clientSocket.getInetAddress());
-                // отправляет пул потоков на выполнение
-                readPool.submit(() -> {
-                    Request request = requestReader.read(clientSocket); // берем запрос с соеденения с клиентом
-                    if (request == null) {
-                        return; // если запрос пустой, то ничего не возвращаем
-                    }
 
-                    // создаем новый поток
-                    new Thread(() -> {
-                        //берем запрос, который надо выполнить и выполняем
-                        Response response = commandExecutor.execute(request);
-                        //отправляем пул потоков обратно
-                        sendPool.submit(() -> responseSender.send(clientSocket, response));
+                ClientHandler handler = new ClientHandler(clientSocket, commandExecutor);
+                String key = clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort();
+                clients.put(key, handler);
 
-                    }).start();
-                });
-
-
-
-
+                pool.submit(handler);
             }
-
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private class ClientHandler implements Runnable {
+        private final Socket socket;
+        private final CommandExecutor executor;
+        private ObjectOutputStream out;
+        private ObjectInputStream in;
+
+        public ClientHandler(Socket socket, CommandExecutor executor) {
+            this.socket = socket;
+            this.executor = executor;
+        }
+
+        @Override
+        public void run() {
+            try {
+                // Создаем потоки ОДИН РАЗ при подключении
+                out = new ObjectOutputStream(socket.getOutputStream());
+                out.flush(); // Важно! Отправляем заголовок сразу
+                in = new ObjectInputStream(socket.getInputStream());
+
+                System.out.println("Streams initialized for " + socket.getInetAddress());
+
+                // Читаем запросы в цикле
+                while (true) {
+                    Request request = (Request) in.readObject();
+                    if (request == null) break;
+
+                    System.out.println("Received request: " + request.getCommand());
+
+                    Response response = executor.execute(request);
+                    System.out.println("Sending response: " + response.isSuccess());
+
+                    out.writeObject(response);
+                    out.flush();
+                }
+            } catch (IOException | ClassNotFoundException e) {
+                System.out.println("Client disconnected: " + socket.getInetAddress());
+            } finally {
+                cleanup();
+            }
+        }
+
+        private void cleanup() {
+            try {
+                if (in != null) in.close();
+                if (out != null) out.close();
+                if (socket != null) socket.close();
+
+                String key = socket.getInetAddress().getHostAddress() + ":" + socket.getPort();
+                clients.remove(key);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
