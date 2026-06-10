@@ -164,7 +164,6 @@ public class WorkerDAO {
         }
 
         stmt.setString(8, worker.getStatus().name());
-        stmt.setInt(9, Math.toIntExact(worker.getPerson().getHeight()));
         stmt.setString(10, worker.getPerson().getEyeColor().name());
         stmt.setString(11, worker.getPerson().getHairColor().name());
         stmt.setString(12, worker.getPerson().getNationality().name());
