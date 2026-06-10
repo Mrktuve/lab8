@@ -1,167 +1,162 @@
 package client.gui;
 
 import common.model.*;
-import common.enums.*;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
+import java.util.*;
+import java.util.function.Consumer;
 
-import java.util.List;
-
-/**
- * Панель для визуализации коллекции работников.
- */
 public class CanvasPanel extends Pane {
-
     private final Canvas canvas;
     private final Localization localization;
-    private List<Worker> workers;
-
+    private final Session session;
+    private List<Worker> workers = List.of();
     private double scale = 1.0;
-    private double offsetX = 0;
-    private double offsetY = 0;
-    private Point2D lastMousePosition;
+    private double offsetX = 0, offsetY = 0;
+    private Point2D lastMouse;
+    private Consumer<Worker> onWorkerClick;
 
-    private static final Color COLOR_FIRED = Color.RED;
-    private static final Color COLOR_RECOMMENDED = Color.PURPLE;
-    private static final Color COLOR_REGULAR = Color.BLUE;
-    private static final Color COLOR_PROBATION = Color.ORANGE;
-    private static final Color COLOR_DEFAULT = Color.GRAY;
+    // Цвета по владельцу
+    private final Map<String, Color> ownerColors = new HashMap<>();
+    private static final Color[] PALETTE = {
+            Color.CORAL, Color.DODGERBLUE, Color.MEDIUMSEAGREEN, Color.DARKORANGE,
+            Color.MEDIUMPURPLE, Color.GOLD, Color.DEEPPINK, Color.TEAL,
+            Color.CRIMSON, Color.STEELBLUE, Color.OLIVEDRAB, Color.SLATEBLUE
+    };
 
-    public CanvasPanel(Localization localization) {
+    public CanvasPanel(Localization localization, Session session) {
         this.localization = localization;
-        this.workers = List.of();
-
+        this.session = session;
         canvas = new Canvas(800, 600);
         getChildren().add(canvas);
-
         canvas.widthProperty().bind(widthProperty());
         canvas.heightProperty().bind(heightProperty());
 
-        setupMouseHandlers();
+        canvas.setOnMousePressed(e -> lastMouse = new Point2D(e.getX(), e.getY()));
+        canvas.setOnMouseDragged(e -> {
+            if (lastMouse != null) {
+                offsetX += e.getX() - lastMouse.getX();
+                offsetY += e.getY() - lastMouse.getY();
+                lastMouse = new Point2D(e.getX(), e.getY());
+                redraw();
+            }
+        });
+        canvas.setOnScroll(this::handleScroll);
+        canvas.setOnMouseClicked(this::handleClick);
 
-        widthProperty().addListener((obs, oldVal, newVal) -> redraw());
-        heightProperty().addListener((obs, oldVal, newVal) -> redraw());
+        widthProperty().addListener((o, ov, nv) -> redraw());
+        heightProperty().addListener((o, ov, nv) -> redraw());
     }
+
+    public void setOnWorkerClick(Consumer<Worker> handler) { this.onWorkerClick = handler; }
 
     public void setWorkers(List<Worker> workers) {
         this.workers = workers != null ? workers : List.of();
+        assignOwnerColors();
         redraw();
     }
 
-    private void setupMouseHandlers() {
-        canvas.setOnMousePressed(this::handleMousePressed);
-        canvas.setOnMouseDragged(this::handleMouseDragged);
-        canvas.setOnScroll(this::handleScroll);
-    }
-
-    private void handleMousePressed(MouseEvent event) {
-        lastMousePosition = new Point2D(event.getX(), event.getY());
-    }
-
-    private void handleMouseDragged(MouseEvent event) {
-        if (lastMousePosition != null) {
-            double deltaX = event.getX() - lastMousePosition.getX();
-            double deltaY = event.getY() - lastMousePosition.getY();
-            offsetX += deltaX;
-            offsetY += deltaY;
-            lastMousePosition = new Point2D(event.getX(), event.getY());
-            redraw();
+    private void assignOwnerColors() {
+        ownerColors.clear();
+        int idx = 0;
+        for (Worker w : workers) {
+            String owner = w.getOwnerLogin() != null ? w.getOwnerLogin() : "unknown";
+            if (!ownerColors.containsKey(owner)) {
+                ownerColors.put(owner, PALETTE[idx % PALETTE.length]);
+                idx++;
+            }
         }
     }
 
-    private void handleScroll(ScrollEvent event) {
-        double zoomFactor = event.getDeltaY() > 0 ? 1.1 : 0.9;
-        scale *= zoomFactor;
+    private Color getColorFor(Worker w) {
+        String owner = w.getOwnerLogin() != null ? w.getOwnerLogin() : "unknown";
+        return ownerColors.getOrDefault(owner, Color.GRAY);
+    }
+
+    private void handleScroll(ScrollEvent e) {
+        scale *= e.getDeltaY() > 0 ? 1.1 : 0.9;
         scale = Math.max(0.1, Math.min(scale, 5.0));
         redraw();
     }
 
+    private void handleClick(MouseEvent e) {
+        double mx = (e.getX() - offsetX) / scale;
+        double my = (e.getY() - offsetY) / scale;
+        for (Worker w : workers) {
+            double[] pos = getWorkerScreenPos(w);
+            double dx = mx - pos[0], dy = my - pos[1];
+            if (dx * dx + dy * dy < 900) {
+                if (onWorkerClick != null) onWorkerClick.accept(w);
+                return;
+            }
+        }
+    }
+
     public void redraw() {
         GraphicsContext gc = canvas.getGraphicsContext2D();
-
         gc.setFill(Color.WHITE);
         gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-
         if (workers.isEmpty()) {
-            drawEmptyMessage(gc);
+            gc.setFill(Color.GRAY);
+            gc.setFont(Font.font(18));
+            gc.setTextAlign(TextAlignment.CENTER);
+            gc.fillText(localization.get("canvas.empty"), canvas.getWidth() / 2, canvas.getHeight() / 2);
             return;
         }
-
         gc.save();
         gc.translate(offsetX, offsetY);
         gc.scale(scale, scale);
-
         drawWorkers(gc);
-
         gc.restore();
     }
 
-    private void drawEmptyMessage(GraphicsContext gc) {
-        gc.setFill(Color.GRAY);
-        gc.setFont(Font.font(18));
-        gc.setTextAlign(TextAlignment.CENTER);
-        gc.fillText(localization.get("canvas.empty"), canvas.getWidth() / 2, canvas.getHeight() / 2);
-    }
-
     private void drawWorkers(GraphicsContext gc) {
-        double centerX = canvas.getWidth() / 2;
-        double centerY = canvas.getHeight() / 2;
-        double radius = Math.min(canvas.getWidth(), canvas.getHeight()) * 0.35;
-
-        int count = workers.size();
-        for (int i = 0; i < count; i++) {
-            Worker worker = workers.get(i);
-
-            double angle = (2 * Math.PI * i) / count;
-            double x = centerX + radius * Math.cos(angle);
-            double y = centerY + radius * Math.sin(angle);
-
-            drawWorker(gc, worker, x, y);
+        for (Worker w : workers) {
+            double[] pos = getWorkerScreenPos(w);
+            drawWorker(gc, w, pos[0], pos[1]);
         }
     }
 
+    private double[] getWorkerScreenPos(Worker w) {
+        double cx = canvas.getWidth() / 2;
+        double cy = canvas.getHeight() / 2;
+        double x = cx, y = cy;
+        Coordinates c = w.getCoordinates();
+        if (c != null) {
+            x = cx + c.getX();
+            y = cy - c.getY();
+        }
+        return new double[]{x, y};
+    }
+
     private void drawWorker(GraphicsContext gc, Worker worker, double x, double y) {
-        Color color = getStatusColor(worker.getStatus());
+        Color color = getColorFor(worker);
+        double size = 50;
 
-        double circleSize = 50;
         gc.setFill(color);
-        gc.fillOval(x - circleSize / 2, y - circleSize / 2, circleSize, circleSize);
-
+        gc.fillOval(x - size / 2, y - size / 2, size, size);
         gc.setStroke(Color.BLACK);
         gc.setLineWidth(2);
-        gc.strokeOval(x - circleSize / 2, y - circleSize / 2, circleSize, circleSize);
+        gc.strokeOval(x - size / 2, y - size / 2, size, size);
 
         gc.setFill(Color.BLACK);
         gc.setFont(Font.font(11));
         gc.setTextAlign(TextAlignment.CENTER);
-
-        String displayName = worker.getName().length() > 10 ?
+        String name = worker.getName().length() > 10 ?
                 worker.getName().substring(0, 10) + "..." : worker.getName();
-        gc.fillText(displayName, x, y - circleSize / 2 - 5);
-
+        gc.fillText(name, x, y - size / 2 - 5);
         if (worker.getSalary() != null) {
-            gc.fillText("$" + worker.getSalary().intValue(), x, y + circleSize / 2 + 15);
+            gc.fillText("$" + worker.getSalary().intValue(), x, y + size / 2 + 15);
         }
-    }
-
-    private Color getStatusColor(Status status) {
-        if (status == null) {
-            return COLOR_DEFAULT;
-        }
-
-        return switch (status) {
-            case FIRED -> COLOR_FIRED;
-            case RECOMMENDED_FOR_PROMOTION -> COLOR_RECOMMENDED;
-            case REGULAR -> COLOR_REGULAR;
-            case PROBATION -> COLOR_PROBATION;
-        };
+        gc.setFill(Color.DARKGRAY);
+        gc.setFont(Font.font(9));
+        gc.fillText(worker.getOwnerLogin(), x, y + size / 2 + 28);
     }
 }

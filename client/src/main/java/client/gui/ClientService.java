@@ -1,17 +1,14 @@
 package client.gui;
 
-
 import client.NetworkClient;
 import common.commands.*;
+import common.enums.Status;
+import common.model.Worker;
 import common.network.Request;
 import common.network.Response;
-
-import common.model.Worker;
-
 import java.util.List;
 
 public class ClientService {
-
     private final NetworkClient networkClient;
     private final Session session;
     private final Localization localization;
@@ -24,8 +21,7 @@ public class ClientService {
 
     public Response login(String login, String password) {
         try {
-            Command loginCommand = new Login();
-            Request request = new Request(loginCommand, login, password);
+            Request request = new Request(new Login(), login, password);
             return networkClient.sendRequest(request);
         } catch (Exception e) {
             return new Response(false, localization.get("error.network") + ": " + e.getMessage());
@@ -34,8 +30,7 @@ public class ClientService {
 
     public Response register(String login, String password) {
         try {
-            Command registerCommand = new Register();
-            Request request = new Request(registerCommand, login, password);
+            Request request = new Request(new Register(), login, password);
             return networkClient.sendRequest(request);
         } catch (Exception e) {
             return new Response(false, localization.get("error.network") + ": " + e.getMessage());
@@ -45,10 +40,8 @@ public class ClientService {
     @SuppressWarnings("unchecked")
     public List<Worker> loadCollection() {
         try {
-            Command showCommand = new Show();
-            Request request = new Request(showCommand, session.getLogin(), session.getPassword());
+            Request request = new Request(new Show(), session.getLogin(), session.getPassword());
             Response response = networkClient.sendRequest(request);
-
             if (response.isSuccess() && response.getData() != null) {
                 return (List<Worker>) response.getData();
             }
@@ -59,10 +52,10 @@ public class ClientService {
         }
     }
 
+    // ИСПРАВЛЕНО: передаем worker в конструктор Add, Request принимает 3 аргумента
     public Response addWorker(Worker worker) {
         try {
-            Command addCommand = new Add();
-            Request request = new Request(addCommand, worker, session.getLogin(), session.getPassword());
+            Request request = new Request(new Add(worker), session.getLogin(), session.getPassword());
             return networkClient.sendRequest(request);
         } catch (Exception e) {
             return new Response(false, localization.get("error.network") + ": " + e.getMessage());
@@ -71,8 +64,7 @@ public class ClientService {
 
     public Response addIfMax(Worker worker) {
         try {
-            Command addIfMaxCommand = new AddIfMax(worker);
-            Request request = new Request(addIfMaxCommand, session.getLogin(), session.getPassword());
+            Request request = new Request(new AddIfMax(worker), session.getLogin(), session.getPassword());
             return networkClient.sendRequest(request);
         } catch (Exception e) {
             return new Response(false, localization.get("error.network") + ": " + e.getMessage());
@@ -81,18 +73,37 @@ public class ClientService {
 
     public Response updateWorker(long id, Worker worker) {
         try {
-            Command updateCommand = new UpdateId(id, worker);
-            Request request = new Request(updateCommand, session.getLogin(), session.getPassword());
+            Request request = new Request(new UpdateId(id, worker), session.getLogin(), session.getPassword());
             return networkClient.sendRequest(request);
         } catch (Exception e) {
             return new Response(false, localization.get("error.network") + ": " + e.getMessage());
         }
     }
 
-    public Response removeWorker(long id) {
+    // ИСПРАВЛЕНО: RemoveById вместо RemoveId
+    public Response removeById(long id) {
         try {
-            Command removeCommand = new RemoveId(id);
-            Request request = new Request(removeCommand, session.getLogin(), session.getPassword());
+            Request request = new Request(new RemoveById(id), session.getLogin(), session.getPassword());
+            return networkClient.sendRequest(request);
+        } catch (Exception e) {
+            return new Response(false, localization.get("error.network") + ": " + e.getMessage());
+        }
+    }
+
+    // ДОБАВЛЕНО: removeLower
+    public Response removeLower(Worker worker) {
+        try {
+            Request request = new Request(new RemoveLower(worker), session.getLogin(), session.getPassword());
+            return networkClient.sendRequest(request);
+        } catch (Exception e) {
+            return new Response(false, localization.get("error.network") + ": " + e.getMessage());
+        }
+    }
+
+    // ДОБАВЛЕНО: removeAnyByStatus
+    public Response removeAnyByStatus(Status status) {
+        try {
+            Request request = new Request(new RemoveAnyByStatus(status), session.getLogin(), session.getPassword());
             return networkClient.sendRequest(request);
         } catch (Exception e) {
             return new Response(false, localization.get("error.network") + ": " + e.getMessage());
@@ -101,18 +112,17 @@ public class ClientService {
 
     public Response clearCollection() {
         try {
-            Command clearCommand = new Clear();
-            Request request = new Request(clearCommand, session.getLogin(), session.getPassword());
+            Request request = new Request(new Clear(), session.getLogin(), session.getPassword());
             return networkClient.sendRequest(request);
         } catch (Exception e) {
             return new Response(false, localization.get("error.network") + ": " + e.getMessage());
         }
     }
 
-    public Response getInfo(long id) {
+    // ИСПРАВЛЕНО: убран бесполезный параметр id
+    public Response info() {
         try {
-            Command infoCommand = new Info();
-            Request request = new Request(infoCommand, session.getLogin(), session.getPassword());
+            Request request = new Request(new Info(), session.getLogin(), session.getPassword());
             return networkClient.sendRequest(request);
         } catch (Exception e) {
             return new Response(false, localization.get("error.network") + ": " + e.getMessage());
@@ -121,13 +131,42 @@ public class ClientService {
 
     public Response help() {
         try {
-            Command helpCommand = new Help();
-            Request request = new Request(helpCommand, session.getLogin(), session.getPassword());
+            Request request = new Request(new Help(), session.getLogin(), session.getPassword());
             return networkClient.sendRequest(request);
         } catch (Exception e) {
             return new Response(false, localization.get("error.network") + ": " + e.getMessage());
         }
     }
 
+    // ДОБАВЛЕНО: history
+    public Response history() {
+        try {
+            Request request = new Request(new History(), session.getLogin(), session.getPassword());
+            return networkClient.sendRequest(request);
+        } catch (Exception e) {
+            return new Response(false, localization.get("error.network") + ": " + e.getMessage());
+        }
+    }
 
+    // ДОБАВЛЕНО: printDescending
+    public Response printDescending() {
+        try {
+            Request request = new Request(new PrintDescending(), session.getLogin(), session.getPassword());
+            return networkClient.sendRequest(request);
+        } catch (Exception e) {
+            return new Response(false, localization.get("error.network") + ": " + e.getMessage());
+        }
+    }
+
+    // ДОБАВЛЕНО: filterStartsWithName
+    public Response filterStartsWithName(String prefix) {
+        try {
+            Request request = new Request(new FilterStartsWithName(prefix), session.getLogin(), session.getPassword());
+            return networkClient.sendRequest(request);
+        } catch (Exception e) {
+            return new Response(false, localization.get("error.network") + ": " + e.getMessage());
+        }
+    }
+
+    public Session getSession() { return session; }
 }
