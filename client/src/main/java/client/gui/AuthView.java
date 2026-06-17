@@ -1,17 +1,21 @@
 package client.gui;
 
 import client.NetworkClient;
+import client.gui.localization.localization;
 import common.network.Request;
 import common.network.Response;
 import common.commands.Login;
 import common.commands.Register;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+
+import java.util.Objects;
 
 /**
  * Экран авторизации и регистрации.
@@ -20,7 +24,7 @@ public class AuthView {
 
     private final Stage stage;
     private final NetworkClient networkClient;
-    private final Localization localization;
+    private final localization localization;
     private final Session session;
 
     private TextField loginField;
@@ -28,7 +32,7 @@ public class AuthView {
     private Label errorLabel;
     private ComboBox<String> languageSelector;
 
-    public AuthView(Stage stage, NetworkClient networkClient, Localization localization, Session session) {
+    public AuthView(Stage stage, NetworkClient networkClient, localization localization, Session session) {
         this.stage = stage;
         this.networkClient = networkClient;
         this.localization = localization;
@@ -36,76 +40,190 @@ public class AuthView {
     }
 
     public void show() {
-        VBox root = new VBox(15);
-        root.setAlignment(Pos.CENTER);
-        root.setPadding(new Insets(30));
-        root.setStyle("-fx-background-color: #f0f0f0;");
+
+
+
+        Image backgroundImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/images/title_screen.jpg")));
+
+        ImageView backgroundView = new ImageView(backgroundImage);
+
+        backgroundView.setPreserveRatio(false);
+
+
 
         Label titleLabel = new Label(localization.get("auth.title"));
-        titleLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
 
-        // Выбор языка
-        HBox languageBox = new HBox(10);
-        languageBox.setAlignment(Pos.CENTER);
+        titleLabel.setFont(MinecraftFont.get(28));
 
-        Label languageLabel = new Label(localization.get("auth.language") + ":");
+        titleLabel.setStyle("-fx-text-fill: white;");
+
+
 
         languageSelector = new ComboBox<>();
-        // Заполняем используя локализацию
-        languageSelector.getItems().addAll(
-                localization.get("lang.ru"),
-                localization.get("lang.et"),
-                localization.get("lang.lt"),
-                localization.get("lang.es")
-        );
 
-        // Выбираем текущий язык
+        languageSelector.getItems().addAll(localization.get("lang.ru"), localization.get("lang.et"), localization.get("lang.lt"), localization.get("lang.es"));
+
         String currentLang = localization.getCurrentLocale();
+
         String selectedValue = switch (currentLang) {
             case "et" -> localization.get("lang.et");
             case "lt" -> localization.get("lang.lt");
             case "es_CR" -> localization.get("lang.es");
             default -> localization.get("lang.ru");
         };
+
         languageSelector.setValue(selectedValue);
 
         languageSelector.setOnAction(e -> changeLanguage());
 
-        languageBox.getChildren().addAll(languageLabel, languageSelector);
+        languageSelector.setPrefWidth(220);
 
-        // Поля ввода
+
+
         loginField = new TextField();
+
         loginField.setPromptText(localization.get("auth.login.prompt"));
-        loginField.setPrefWidth(300);
+
+        loginField.setFont(MinecraftFont.get(18));
+        loginField.setStyle("""
+                -fx-background-color:
+                #8b8b8b;
+                
+                -fx-text-fill:
+                white;
+                
+                -fx-prompt-text-fill:
+                #d0d0d0;
+                
+                -fx-border-color:
+                #2c2c2c;
+                
+                -fx-border-width:
+                2;
+                """);
+
+
+        loginField.setPrefWidth(320);
+        loginField.setMaxWidth(320);
+        loginField.setPrefHeight(45);
+        loginField.setMaxHeight(45);
+
+
 
         passwordField = new PasswordField();
-        passwordField.setPromptText(localization.get("auth.password.prompt"));
-        passwordField.setPrefWidth(300);
 
-        // Кнопки
+        passwordField.setPromptText(localization.get("auth.password.prompt"));
+
+        passwordField.setFont(MinecraftFont.get(18));
+        passwordField.setStyle("""
+                -fx-background-color:
+                #8b8b8b;
+                
+                -fx-text-fill:
+                white;
+                
+                -fx-prompt-text-fill:
+                #d0d0d0;
+                
+                -fx-border-color:
+                #2c2c2c;
+                
+                -fx-border-width:
+                2;
+                """);
+
+        passwordField.setPrefWidth(320);
+        passwordField.setMaxWidth(320);
+        passwordField.setPrefHeight(45);
+        passwordField.setMaxHeight(45);
+
+
         Button loginButton = new Button(localization.get("auth.login.button"));
-        loginButton.setPrefWidth(140);
+
+        loginButton.setFont(MinecraftFont.get(18));
+        loginButton.setStyle("""
+                -fx-background-color:
+                #8b8b8b;
+                
+                -fx-text-fill:
+                white;
+                
+                -fx-prompt-text-fill:
+                #d0d0d0;
+                
+                -fx-border-color:
+                #2c2c2c;
+                
+                -fx-border-width:
+                2;
+                """);
+
+        loginButton.setPrefSize(320, 45);
+
         loginButton.setOnAction(e -> handleLogin());
 
+
+
         Button registerButton = new Button(localization.get("auth.register.button"));
-        registerButton.setPrefWidth(140);
+
+        registerButton.setFont(MinecraftFont.get(18));
+        registerButton.setStyle("""
+                -fx-background-color:
+                #8b8b8b;
+                
+                -fx-text-fill:
+                white;
+                
+                -fx-prompt-text-fill:
+                #d0d0d0;
+                
+                -fx-border-color:
+                #2c2c2c;
+                
+                -fx-border-width:
+                2;
+                """);
+
+        registerButton.setPrefSize(320, 45);
+
         registerButton.setOnAction(e -> handleRegister());
 
-        HBox buttonBox = new HBox(10);
-        buttonBox.setAlignment(Pos.CENTER);
-        buttonBox.getChildren().addAll(loginButton, registerButton);
+
 
         errorLabel = new Label();
-        errorLabel.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
+
+        errorLabel.setFont(MinecraftFont.get(14));
+
+        errorLabel.setStyle("-fx-text-fill: #ff5555;");
+
         errorLabel.setWrapText(true);
-        errorLabel.setMaxWidth(300);
 
-        root.getChildren().addAll(titleLabel, languageBox, loginField, passwordField, buttonBox, errorLabel);
 
-        Scene scene = new Scene(root, 400, 350);
+        VBox menuBox = new VBox(12);
+
+        menuBox.setAlignment(Pos.CENTER);
+
+        menuBox.getChildren().addAll(titleLabel, languageSelector, loginField, passwordField, loginButton, registerButton, errorLabel);
+
+
+
+        StackPane root = new StackPane(backgroundView, menuBox);
+
+        Scene scene = new Scene(root, 1280, 720);
+
+        backgroundView.fitWidthProperty().bind(scene.widthProperty());
+
+        backgroundView.fitHeightProperty().bind(scene.heightProperty());
+
         stage.setScene(scene);
+
         stage.setTitle(localization.get("auth.window.title"));
-        stage.setResizable(false);
+
+        stage.setMinWidth(960);
+        stage.setMinHeight(540);
+
+        stage.centerOnScreen();
+
         stage.show();
     }
 
@@ -162,7 +280,7 @@ public class AuthView {
     private void changeLanguage() {
         String selected = languageSelector.getValue();
 
-        // Определяем язык по ВЫБРАННОМУ ЗНАЧЕНИЮ из ComboBox
+
         String langCode;
         if (selected.equals(localization.get("lang.et"))) {
             langCode = "et";
@@ -176,7 +294,6 @@ public class AuthView {
 
         localization.setLocale(langCode);
 
-        // ПЕРЕСОЗДАЕМ окно с новой локализацией
 
         show();
     }

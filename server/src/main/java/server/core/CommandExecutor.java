@@ -7,6 +7,7 @@ import common.network.Response;
 import server.auth.AuthManager;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 
 public class CommandExecutor {
@@ -48,30 +49,37 @@ public class CommandExecutor {
 
         try {
             if (command instanceof Add add) {
-                Worker worker = add.getWorker();
-                worker.setOwnerLogin(login);
-                worker.setCreationDate(LocalDateTime.now());
-                worker.setId(null);
 
-                boolean success = manager.add(worker);
-                return new Response(success, success ? "Worker added" : "DB add error");
+                try {
+
+                    Worker worker = add.getWorker();
+
+                    worker.setOwnerLogin(login);
+                    worker.setCreationDate(LocalDateTime.now());
+                    worker.setId(null);
+
+                    System.out.println("ADDING WORKER: " + worker);
+
+                    boolean success = manager.add(worker);
+
+                    System.out.println("ADD SUCCESS = " + success);
+
+                    return new Response(success, success ? "Worker added" : "DB add error");
+
+                } catch (Exception e) {
+
+                    e.printStackTrace();
+
+                    return new Response(false, "DB ERROR: " + e.getMessage());
+                }
             }
 
             if (command instanceof Show) {
-                StringBuilder sb = new StringBuilder();
-                for (Worker worker : manager.getCollection()) {
-                    sb.append(worker).append("\n");
-                }
-                return new Response(true, sb.toString());
+                return new Response(true, "OK", new ArrayList<>(manager.getCollection()));
             }
 
             if (command instanceof Info) {
-                return new Response(true, "Collection type: " + manager
-                                .getCollection()
-                                .getClass()
-                                .getSimpleName()
-                                + "\nSize: " + manager.getCollection().size()
-                );
+                return new Response(true, "Collection type: " + manager.getCollection().getClass().getSimpleName() + "\nSize: " + manager.getCollection().size());
             }
 
             if (command instanceof RemoveById cmd) {
@@ -125,26 +133,23 @@ public class CommandExecutor {
 
             if (command instanceof Help) {
                 String helpText = """
-        Доступные команды:
-        help - показать эту справку
-        info - информация о коллекции
-        show - показать все элементы
-        add {element} - добавить новый элемент
-        update id {element} - обновить элемент
-        remove_by_id id - удалить элемент по id
-        clear - очистить коллекцию (только ваши элементы)
-        print_descending - вывести элементы в порядке убывания зарплаты
-        filter_starts_with_name name - фильтр по началу имени
-        remove_lower {element} - удалить элементы меньше заданного
-        remove_any_by_status status - удалить любой элемент со статусом
-        add_if_max {element} - добавить, если зарплата больше максимума
-        """;
+                        Доступные команды:
+                        help - показать эту справку
+                        info - информация о коллекции
+                        show - показать все элементы
+                        add {element} - добавить новый элемент
+                        update id {element} - обновить элемент
+                        remove_by_id id - удалить элемент по id
+                        clear - очистить коллекцию (только ваши элементы)
+                        print_descending - вывести элементы в порядке убывания зарплаты
+                        filter_starts_with_name name - фильтр по началу имени
+                        remove_lower {element} - удалить элементы меньше заданного
+                        remove_any_by_status status - удалить любой элемент со статусом
+                        add_if_max {element} - добавить, если зарплата больше максимума
+                        """;
                 if (command instanceof PrintDescending) {
                     StringBuilder sb = new StringBuilder();
-                    manager.getCollection()
-                            .stream()
-                            .sorted(Comparator.comparing(Worker::getSalary).reversed())
-                            .forEach(w -> sb.append(w).append("\n"));
+                    manager.getCollection().stream().sorted(Comparator.comparing(Worker::getSalary).reversed()).forEach(w -> sb.append(w).append("\n"));
                     return new Response(true, sb.toString());
                 }
                 return new Response(true, helpText);

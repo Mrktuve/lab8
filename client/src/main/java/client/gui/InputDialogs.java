@@ -1,9 +1,7 @@
 package client.gui;
 
+import client.gui.localization.localization;
 import javafx.scene.control.*;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Priority;
-import javafx.util.StringConverter;
 
 import java.time.LocalDate;
 
@@ -66,7 +64,7 @@ public class InputDialogs {
     /**
      * Показывает диалог ввода даты.
      */
-    public static LocalDate showDateInputDialog(String title, String header, String content, Localization loc) {
+    public static LocalDate showDateInputDialog(String title, String header, String content, localization loc) {
         TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle(title);
         dialog.setHeaderText(header);

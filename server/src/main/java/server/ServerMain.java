@@ -8,6 +8,7 @@ import server.database.UserDAO;
 import server.database.WorkerDAO;
 import server.network.ServerNetworkHandler;
 
+
 public class ServerMain {
 
     public static void main(String[] args) {

@@ -1,5 +1,6 @@
 package server.database;
 
+import common.model.Person;
 import common.model.Worker;
 
 import java.sql.*;
@@ -33,14 +34,14 @@ public class WorkerDAO {
 
     public boolean addWorker(Worker worker) {
         String sql = """
-            INSERT INTO workers (
-                name, coordinate_x, coordinate_y, creation_date,
-                salary, start_date, end_date, status,
-                person_height, person_eye_color, person_hair_color,
-                person_nationality, owner_login
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            RETURNING id
-            """;
+                INSERT INTO workers (
+                    name, coordinate_x, coordinate_y, creation_date,
+                    salary, start_date, end_date, status,
+                    person_passport_id, person_eye_color, person_hair_color,
+                    person_nationality, owner_login
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                RETURNING id
+                """;
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             fillWorkerParams(stmt, worker);
@@ -60,16 +61,16 @@ public class WorkerDAO {
 
     public boolean updateWorker(long id, Worker worker, String ownerLogin) {
         String sql = """
-            UPDATE workers SET
-                name = ?, coordinate_x = ?, coordinate_y = ?,
-                salary = ?, start_date = ?, end_date = ?,
-                status = ?, person_height = ?, person_eye_color = ?,
-                person_hair_color = ?, person_nationality = ?
-            WHERE id = ? AND owner_login = ?
-            """;
+                UPDATE workers SET
+                    name = ?, coordinate_x = ?, coordinate_y = ?, 
+                    salary = ?, start_date = ?, end_date = ?,
+                    status = ?, person_passport_id = ?, person_eye_color = ?,
+                    person_hair_color = ?, person_nationality = ?
+                WHERE id = ? AND owner_login = ?
+                """;
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            fillWorkerParams(stmt, worker);
+            fillWorkerUpdateParams(stmt, worker);
             stmt.setLong(12, id);
             stmt.setString(13, ownerLogin);
 
@@ -98,20 +99,6 @@ public class WorkerDAO {
     }
 
 
-    public boolean clearByOwner(String ownerLogin) {
-        String sql = "DELETE FROM workers WHERE owner_login = ?";
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, ownerLogin);
-            stmt.executeUpdate();
-            return true;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-
     public int removeLower(double salary, String ownerLogin) {
         String sql = "DELETE FROM workers WHERE salary < ? AND owner_login = ?";
 
@@ -129,13 +116,13 @@ public class WorkerDAO {
 
     public boolean removeAnyByStatus(String status, String ownerLogin) {
         String sql = """
-            DELETE FROM workers
-            WHERE id = (
-                SELECT id FROM workers
-                WHERE status = ? AND owner_login = ?
-                LIMIT 1
-            )
-            """;
+                DELETE FROM workers
+                WHERE id = (
+                    SELECT id FROM workers
+                    WHERE status = ? AND owner_login = ?
+                    LIMIT 1
+                )
+                """;
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, status);
@@ -150,12 +137,19 @@ public class WorkerDAO {
     }
 
     private void fillWorkerParams(PreparedStatement stmt, Worker worker) throws SQLException {
+
         stmt.setString(1, worker.getName());
+
         stmt.setDouble(2, worker.getCoordinates().getX());
+
         stmt.setLong(3, worker.getCoordinates().getY());
+
         stmt.setTimestamp(4, Timestamp.valueOf(worker.getCreationDate()));
+
         stmt.setDouble(5, worker.getSalary());
+
         stmt.setTimestamp(6, Timestamp.valueOf(worker.getStartDate().atStartOfDay()));
+
 
         if (worker.getEndDate() != null) {
             stmt.setTimestamp(7, Timestamp.valueOf(worker.getEndDate()));
@@ -163,9 +157,112 @@ public class WorkerDAO {
             stmt.setNull(7, Types.TIMESTAMP);
         }
 
-        stmt.setString(8, worker.getStatus().name());
-        stmt.setString(10, worker.getPerson().getEyeColor().name());
-        stmt.setString(11, worker.getPerson().getHairColor().name());
-        stmt.setString(12, worker.getPerson().getNationality().name());
+
+        if (worker.getStatus() != null) {
+            stmt.setString(8, worker.getStatus().name());
+        } else {
+            stmt.setNull(8, Types.VARCHAR);
+        }
+
+        Person person = worker.getPerson();
+
+
+        if (person != null && person.getPassportID() != null && !person.getPassportID().isBlank()) {
+
+            stmt.setString(9, person.getPassportID());
+
+        } else {
+            stmt.setNull(9, Types.VARCHAR);
+        }
+
+
+        if (person != null && person.getEyeColor() != null) {
+
+            stmt.setString(10, person.getEyeColor().name());
+
+        } else {
+            stmt.setNull(10, Types.VARCHAR);
+        }
+
+
+        if (person != null && person.getHairColor() != null) {
+
+            stmt.setString(11, person.getHairColor().name());
+
+        } else {
+            stmt.setNull(11, Types.VARCHAR);
+        }
+
+        if (person != null && person.getNationality() != null) {
+
+            stmt.setString(12, person.getNationality().name());
+
+        } else {
+            stmt.setNull(12, Types.VARCHAR);
+        }
+    }
+    private void fillWorkerUpdateParams(PreparedStatement stmt, Worker worker) throws SQLException {
+
+        stmt.setString(1, worker.getName());
+
+        stmt.setDouble(2, worker.getCoordinates().getX());
+
+        stmt.setLong(3, worker.getCoordinates().getY());
+
+
+        stmt.setDouble(4, worker.getSalary());
+
+        stmt.setTimestamp(5, Timestamp.valueOf(worker.getStartDate().atStartOfDay()));
+
+
+        if (worker.getEndDate() != null) {
+            stmt.setTimestamp(6, Timestamp.valueOf(worker.getEndDate()));
+        } else {
+            stmt.setNull(6, Types.TIMESTAMP);
+        }
+
+
+        if (worker.getStatus() != null) {
+            stmt.setString(7, worker.getStatus().name());
+        } else {
+            stmt.setNull(7, Types.VARCHAR);
+        }
+
+        Person person = worker.getPerson();
+
+
+        if (person != null && person.getPassportID() != null && !person.getPassportID().isBlank()) {
+
+            stmt.setString(8, person.getPassportID());
+
+        } else {
+            stmt.setNull(8, Types.VARCHAR);
+        }
+
+
+        if (person != null && person.getEyeColor() != null) {
+
+            stmt.setString(9, person.getEyeColor().name());
+
+        } else {
+            stmt.setNull(9, Types.VARCHAR);
+        }
+
+
+        if (person != null && person.getHairColor() != null) {
+
+            stmt.setString(10, person.getHairColor().name());
+
+        } else {
+            stmt.setNull(10, Types.VARCHAR);
+        }
+
+        if (person != null && person.getNationality() != null) {
+
+            stmt.setString(11, person.getNationality().name());
+
+        } else {
+            stmt.setNull(11, Types.VARCHAR);
+        }
     }
 }

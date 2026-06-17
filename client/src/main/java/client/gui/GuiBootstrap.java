@@ -1,6 +1,7 @@
 package client.gui;
 
 import client.NetworkClient;
+import client.gui.localization.localization;
 import javafx.application.Application;
 import javafx.stage.Stage;
 
@@ -16,16 +17,16 @@ public class GuiBootstrap extends Application {
     @Override
     public void start(Stage primaryStage) {
         try {
-            // Инициализация компонентов
+
             NetworkClient networkClient = new NetworkClient(DEFAULT_HOST, DEFAULT_PORT);
             Session session = new Session();
-            Localization localization = new Localization();
+            localization localization = new localization();
 
-            // Показываем окно авторизации
+
             AuthView authView = new AuthView(primaryStage, networkClient, localization, session);
             authView.show();
 
-            // Обработчик закрытия приложения
+
             primaryStage.setOnCloseRequest(e -> {
                 networkClient.close();
                 System.exit(0);
@@ -33,7 +34,7 @@ public class GuiBootstrap extends Application {
 
         } catch (Exception e) {
             e.printStackTrace();
-            // Показываем ошибку подключения
+
             javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
                     javafx.scene.control.Alert.AlertType.ERROR
             );
@@ -44,9 +45,5 @@ public class GuiBootstrap extends Application {
             alert.showAndWait();
             System.exit(1);
         }
-    }
-
-    public static void main(String[] args) {
-        launch(args);
     }
 }

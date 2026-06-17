@@ -1,11 +1,14 @@
 package client.gui;
 
 import client.NetworkClient;
+import client.gui.localization.localization;
 import common.model.*;
 import common.enums.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -13,15 +16,24 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
+
+
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.StackPane;
+
+import java.util.Objects;
+
+
 public class MainView {
     private final Stage stage;
     private final NetworkClient networkClient;
-    private final Localization localization;
+    private final localization localization;
     private final Session session;
     private final ClientService clientService;
 
@@ -32,7 +44,7 @@ public class MainView {
     private TextArea infoArea;
     private Label statusLabel;
 
-    public MainView(Stage stage, NetworkClient networkClient, Localization localization, Session session) {
+    public MainView(Stage stage, NetworkClient networkClient, localization localization, Session session) {
         this.stage = stage;
         this.networkClient = networkClient;
         this.localization = localization;
@@ -40,222 +52,368 @@ public class MainView {
         this.clientService = new ClientService(networkClient, session, localization);
     }
 
-    public void show() {
-        BorderPane root = new BorderPane();
-        root.setTop(createTopPanel());
-        root.setCenter(createCenter());
-        root.setBottom(createBottomPanel());
+    private void styleButton(Button button) {
 
-        Scene scene = new Scene(root, 1200, 700);
+        button.setFont(MinecraftFont.get(12));
+
+        button.setPrefHeight(36);
+
+        button.setStyle("""
+                -fx-background-color:
+                #7a7a7a;
+                
+                -fx-text-fill:
+                white;
+                
+                -fx-border-color:
+                #2f2f2f;
+                
+                -fx-border-width:
+                2;
+                """);
+    }
+
+    public void show() {
+
+        BorderPane content = new BorderPane();
+
+        content.setTop(createTopPanel());
+
+        content.setCenter(createCenter());
+
+
+        Image backgroundImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/images/background.png")));
+
+        ImageView backgroundView = new ImageView(backgroundImage);
+
+        backgroundView.setPreserveRatio(false);
+
+
+        StackPane root = new StackPane(backgroundView, content);
+
+        Scene scene = new Scene(root, 1920, 1080);
+
+
+        backgroundView.fitWidthProperty().bind(scene.widthProperty());
+
+        backgroundView.fitHeightProperty().bind(scene.heightProperty());
+
         stage.setScene(scene);
+
         stage.setTitle(localization.get("main.title") + " - " + session.getLogin());
+
         stage.setMaximized(true);
+
         stage.show();
 
         refreshCollection();
     }
 
     private VBox createTopPanel() {
-        VBox panel = new VBox(5);
-        panel.setPadding(new Insets(10));
-        panel.setStyle("-fx-background-color: #d3d3d3;");
 
-        HBox buttonBox = new HBox(10);
+        VBox panel = new VBox(8);
+
+        panel.setPadding(new Insets(10));
+
+        panel.setStyle("""
+                -fx-background-color:
+                rgba(25,25,25,0.75);
+                
+                -fx-border-color:
+                #4d4d4d;
+                
+                -fx-border-width:
+                0 0 2 0;
+                """);
+
+
+
+        HBox buttonBox = new HBox(8);
+
         buttonBox.setAlignment(Pos.CENTER);
 
-        buttonBox.getChildren().addAll(
-                createButton("button.add", e -> handleAdd()),
-                createButton("button.add_if_max", e -> handleAddIfMax()),
-                createButton("button.update", e -> handleUpdate()),
-                createButton("button.remove", e -> handleRemove()),
-                createButton("button.clear", e -> handleClear()),
-                createButton("button.refresh", e -> refreshCollection()),
-                createButton("button.info", e -> showInfo()),
-                createButton("button.help", e -> showHelp()),
-                createButton("button.remove_lower", e -> handleRemoveLower()),
-                createButton("button.remove_by_status", e -> handleRemoveByStatus()),
-                createButton("button.print_descending", e -> handlePrintDescending()),
-                createButton("button.history", e -> showHistory()),
-                createButton("button.logout", e -> handleLogout())
-        );
+        Button addButton = createButton("add", e -> handleAdd());
+
+        Button addIfMaxButton = createButton("add_if_max", e -> handleAddIfMax());
+
+        Button updateButton = createButton("update", e -> handleUpdate());
+
+        Button removeButton = createButton("remove", e -> handleRemove());
+
+        Button clearButton = createButton("clear", e -> handleClear());
+
+        Button refreshButton = createButton("refresh", e -> refreshCollection());
+
+        Button infoButton = createButton("info", e -> showInfo());
+
+        Button removeLowerButton = createButton("remove_lower", e -> handleRemoveLower());
+
+        Button removeByStatusButton = createButton("remove_by_status", e -> handleRemoveByStatus());
+
+        Button helpButton = createButton("help", e -> handleHelp());
+
+        Button logoutButton = createButton("logout", e -> handleLogout());
+
+        // Minecraft style
+        styleButton(addButton);
+        styleButton(addIfMaxButton);
+        styleButton(updateButton);
+        styleButton(removeButton);
+        styleButton(clearButton);
+        styleButton(refreshButton);
+        styleButton(infoButton);
+        styleButton(removeLowerButton);
+        styleButton(removeByStatusButton);
+        styleButton(helpButton);
+        styleButton(logoutButton);
+
+        buttonBox.getChildren().addAll(addButton, addIfMaxButton, updateButton, removeButton, clearButton, refreshButton, infoButton, removeLowerButton, removeByStatusButton, helpButton, logoutButton);
+
 
         HBox filterBox = new HBox(10);
+
         filterBox.setAlignment(Pos.CENTER);
 
         Label filterLabel = new Label(localization.get("main.filter") + ":");
+
+        filterLabel.setStyle("-fx-text-fill: white;");
+
+        filterLabel.setFont(MinecraftFont.get(14));
+
         TextField filterField = new TextField();
+
         filterField.setPromptText(localization.get("main.filter.name"));
-        filterField.setPrefWidth(200);
+
+        filterField.setPrefWidth(220);
+
         filterField.textProperty().addListener((obs, oldVal, newVal) -> filterByName(newVal));
 
         Label sortLabel = new Label(localization.get("main.sort") + ":");
+
+        sortLabel.setStyle("-fx-text-fill: white;");
+
+        sortLabel.setFont(MinecraftFont.get(14));
+
         ComboBox<String> sortCombo = new ComboBox<>();
-        sortCombo.getItems().addAll(
-                localization.get("sort.name_asc"),
-                localization.get("sort.name_desc"),
-                localization.get("sort.salary_asc"),
-                localization.get("sort.salary_desc"),
-                localization.get("sort.id_asc")
-        );
+
+        sortCombo.getItems().addAll(localization.get("sort.name_asc"), localization.get("sort.name_desc"), localization.get("sort.salary_asc"), localization.get("sort.salary_desc"), localization.get("sort.id_asc"));
+
         sortCombo.setValue(localization.get("sort.id_asc"));
+
         sortCombo.setOnAction(e -> sortBy(sortCombo.getValue()));
 
         filterBox.getChildren().addAll(filterLabel, filterField, sortLabel, sortCombo);
+
         panel.getChildren().addAll(buttonBox, filterBox);
+
         return panel;
     }
 
-    private Button createButton(String locKey, javafx.event.EventHandler<javafx.event.ActionEvent> handler) {
-        Button btn = new Button(localization.get(locKey));
-        btn.setOnAction(handler);
-        return btn;
+    private void applyNormalButtonStyle(Button button) {
+
+        button.setStyle("""
+                -fx-background-color:
+                #7a7a7a;
+                
+                -fx-text-fill:
+                white;
+                
+                -fx-border-color:
+                #2c2c2c;
+                
+                -fx-border-width:
+                2;
+                
+                -fx-background-radius:
+                0;
+                
+                -fx-border-radius:
+                0;
+                """);
+    }
+
+    private void applyHoverButtonStyle(Button button) {
+
+        button.setStyle("""
+                -fx-background-color:
+                #9b9b9b;
+                
+                -fx-text-fill:
+                white;
+                
+                -fx-border-color:
+                #2c2c2c;
+                
+                -fx-border-width:
+                2;
+                
+                -fx-background-radius:
+                0;
+                
+                -fx-border-radius:
+                0;
+                """);
+    }
+
+    private Button createButton(String key, EventHandler<ActionEvent> action) {
+
+        Button button = new Button(localization.get(key));
+
+        button.setOnAction(action);
+
+        button.setFont(MinecraftFont.get(11));
+
+        button.setPrefSize(145, 38);
+
+        applyNormalButtonStyle(button);
+
+        button.setOnMouseEntered(e -> applyHoverButtonStyle(button));
+
+        button.setOnMouseExited(e -> applyNormalButtonStyle(button));
+
+        button.setOnMousePressed(e -> button.setTranslateY(2));
+
+        button.setOnMouseReleased(e -> button.setTranslateY(0));
+
+        return button;
     }
 
     private Region createCenter() {
+
+        SplitPane splitPane = new SplitPane();
+        splitPane.setDividerPositions(0.6);
+
         tableView = new TableView<>();
         observableList = FXCollections.observableArrayList();
         fullList = FXCollections.observableArrayList();
+
         tableView.setItems(observableList);
 
         TableColumn<Worker, Long> idCol = new TableColumn<>("ID");
         idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
-        idCol.setPrefWidth(50);
+        idCol.setPrefWidth(60);
 
         TableColumn<Worker, String> nameCol = new TableColumn<>(localization.get("worker.name"));
         nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
-        nameCol.setPrefWidth(120);
 
         TableColumn<Worker, String> coordCol = new TableColumn<>(localization.get("worker.coordinates"));
         coordCol.setCellValueFactory(cellData -> {
             Coordinates c = cellData.getValue().getCoordinates();
-            return new javafx.beans.property.SimpleStringProperty(
-                    c != null ? "(" + c.getX() + ", " + c.getY() + ")" : ""
-            );
+            return new javafx.beans.property.SimpleStringProperty(c != null ? "(" + c.getX() + ", " + c.getY() + ")" : "");
         });
-        coordCol.setPrefWidth(90);
-
         TableColumn<Worker, String> dateCol = new TableColumn<>(localization.get("worker.creationDate"));
+
         dateCol.setCellValueFactory(cellData -> {
             var date = cellData.getValue().getCreationDate();
-            return new javafx.beans.property.SimpleStringProperty(
-                    date != null ? Formats.formatDate(LocalDate.from(date), localization.getCurrentLocale()) : ""
-            );
+
+            return new javafx.beans.property.SimpleStringProperty(date != null ? Formats.formatDate(LocalDate.from(date), localization.getCurrentLocale()) : "");
         });
-        dateCol.setPrefWidth(100);
 
         TableColumn<Worker, String> salaryCol = new TableColumn<>(localization.get("worker.salary"));
         salaryCol.setCellValueFactory(cellData -> {
             Double s = cellData.getValue().getSalary();
-            return new javafx.beans.property.SimpleStringProperty(
-                    s != null ? Formats.formatNumber(s, localization.getCurrentLocale()) : ""
-            );
+            return new javafx.beans.property.SimpleStringProperty(s != null ? Formats.formatNumber(s, localization.getCurrentLocale()) : "");
         });
-        salaryCol.setPrefWidth(90);
 
         TableColumn<Worker, String> startCol = new TableColumn<>(localization.get("worker.startDate"));
+
         startCol.setCellValueFactory(cellData -> {
             var d = cellData.getValue().getStartDate();
-            return new javafx.beans.property.SimpleStringProperty(
-                    d != null ? Formats.formatDate(d, localization.getCurrentLocale()) : ""
-            );
-        });
-        startCol.setPrefWidth(90);
 
+            return new javafx.beans.property.SimpleStringProperty(d != null ? Formats.formatDate(d, localization.getCurrentLocale()) : "");
+        });
         TableColumn<Worker, String> endCol = new TableColumn<>(localization.get("worker.endDate"));
+
         endCol.setCellValueFactory(cellData -> {
             var d = cellData.getValue().getEndDate();
-            return new javafx.beans.property.SimpleStringProperty(
-                    d != null ? Formats.formatDate(LocalDate.from(d), localization.getCurrentLocale()) : ""
-            );
+
+            return new javafx.beans.property.SimpleStringProperty(d != null ? Formats.formatDate(LocalDate.from(d), localization.getCurrentLocale()) : "");
         });
-        endCol.setPrefWidth(90);
 
         TableColumn<Worker, String> statusCol = new TableColumn<>(localization.get("worker.status"));
         statusCol.setCellValueFactory(cellData -> {
-            var s = cellData.getValue().getStatus();
-            return new javafx.beans.property.SimpleStringProperty(s != null ? formatStatus(s) : "");
+            var status = cellData.getValue().getStatus();
+            return new javafx.beans.property.SimpleStringProperty(status != null ? formatStatus(status) : "");
         });
-        statusCol.setPrefWidth(130);
-
         TableColumn<Worker, String> passportCol = new TableColumn<>(localization.get("person.passportID"));
+
         passportCol.setCellValueFactory(cellData -> {
             Person p = cellData.getValue().getPerson();
-            return new javafx.beans.property.SimpleStringProperty(
-                    p != null && p.getPassportID() != null ? p.getPassportID() : ""
-            );
-        });
-        passportCol.setPrefWidth(90);
 
+            return new javafx.beans.property.SimpleStringProperty(p != null && p.getPassportID() != null ? p.getPassportID() : "");
+        });
         TableColumn<Worker, String> eyeCol = new TableColumn<>(localization.get("person.eyeColor"));
+
         eyeCol.setCellValueFactory(cellData -> {
             Person p = cellData.getValue().getPerson();
-            return new javafx.beans.property.SimpleStringProperty(
-                    p != null && p.getEyeColor() != null ? p.getEyeColor().name() : ""
-            );
-        });
-        eyeCol.setPrefWidth(80);
 
+            return new javafx.beans.property.SimpleStringProperty(p != null && p.getEyeColor() != null ? p.getEyeColor().name() : "");
+        });
         TableColumn<Worker, String> hairCol = new TableColumn<>(localization.get("person.hairColor"));
+
         hairCol.setCellValueFactory(cellData -> {
             Person p = cellData.getValue().getPerson();
-            return new javafx.beans.property.SimpleStringProperty(
-                    p != null && p.getHairColor() != null ? p.getHairColor().name() : ""
-            );
-        });
-        hairCol.setPrefWidth(80);
 
+            return new javafx.beans.property.SimpleStringProperty(p != null && p.getHairColor() != null ? p.getHairColor().name() : "");
+        });
         TableColumn<Worker, String> natCol = new TableColumn<>(localization.get("person.nationality"));
+
         natCol.setCellValueFactory(cellData -> {
             Person p = cellData.getValue().getPerson();
-            return new javafx.beans.property.SimpleStringProperty(
-                    p != null && p.getNationality() != null ? p.getNationality().name() : ""
-            );
+
+            return new javafx.beans.property.SimpleStringProperty(p != null && p.getNationality() != null ? p.getNationality().name() : "");
         });
-        natCol.setPrefWidth(90);
 
         TableColumn<Worker, String> ownerCol = new TableColumn<>(localization.get("worker.owner"));
         ownerCol.setCellValueFactory(new PropertyValueFactory<>("ownerLogin"));
-        ownerCol.setPrefWidth(100);
 
-        tableView.getColumns().addAll(idCol, nameCol, coordCol, dateCol, salaryCol,
-                startCol, endCol, statusCol, passportCol, eyeCol, hairCol, natCol, ownerCol);
+        tableView.getColumns().addAll(idCol, nameCol, coordCol, dateCol, salaryCol, startCol, endCol, statusCol, passportCol, eyeCol, hairCol, natCol, ownerCol);
+
+        tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
         tableView.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2) {
                 Worker selected = tableView.getSelectionModel().getSelectedItem();
-                if (selected != null) handleEdit(selected);
+
+                if (selected != null) {
+                    handleEdit(selected);
+                }
             }
         });
 
-        return tableView;
-    }
+        VBox tableBox = new VBox(tableView);
+        VBox.setVgrow(tableView, Priority.ALWAYS);
 
-    private HBox createBottomPanel() {
-        HBox panel = new HBox(10);
-        panel.setPadding(new Insets(10));
 
         canvasPanel = new CanvasPanel(localization, session);
-        canvasPanel.setPrefSize(600, 300);
-        canvasPanel.setStyle("-fx-border-color: black; -fx-border-width: 1;");
         canvasPanel.setOnWorkerClick(this::showWorkerInfo);
 
-        VBox infoBox = new VBox(5);
-        infoBox.setPrefWidth(400);
-        Label infoLabel = new Label(localization.get("main.info") + ":");
-        infoLabel.setStyle("-fx-font-weight: bold;");
+        VBox.setVgrow(canvasPanel, Priority.ALWAYS);
+
+        Label infoLabel = new Label(localization.get("main.info"));
+
         infoArea = new TextArea();
-        infoArea.setPrefHeight(200);
         infoArea.setEditable(false);
         infoArea.setWrapText(true);
-        statusLabel = new Label();
-        statusLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: green;");
-        infoBox.getChildren().addAll(infoLabel, infoArea, statusLabel);
+        infoArea.setPrefHeight(90);
+        infoArea.setMaxHeight(90);
 
-        panel.getChildren().addAll(canvasPanel, infoBox);
-        return panel;
+        statusLabel = new Label();
+        statusLabel.setMaxHeight(25);
+
+        VBox rightPanel = new VBox(10);
+        rightPanel.setPadding(new Insets(10));
+
+        rightPanel.getChildren().addAll(canvasPanel, infoLabel, infoArea, statusLabel);
+
+        VBox.setVgrow(canvasPanel, Priority.ALWAYS);
+
+        splitPane.getItems().addAll(tableBox, rightPanel);
+
+        return splitPane;
     }
 
-    // Сортировка через Streams API
+
     private void sortBy(String sortType) {
         List<Worker> source = fullList.isEmpty() ? observableList : fullList;
         Comparator<Worker> cmp = null;
@@ -278,7 +436,7 @@ public class MainView {
         }
     }
 
-    // Фильтрация через Streams API
+
     private void filterByName(String name) {
         if (name == null || name.isEmpty()) {
             observableList.setAll(fullList);
@@ -286,14 +444,12 @@ public class MainView {
             return;
         }
         String lower = name.toLowerCase();
-        List<Worker> filtered = fullList.stream()
-                .filter(w -> w.getName() != null && w.getName().toLowerCase().startsWith(lower))
-                .collect(Collectors.toList());
+        List<Worker> filtered = fullList.stream().filter(w -> w.getName() != null && w.getName().toLowerCase().startsWith(lower)).collect(Collectors.toList());
         observableList.setAll(filtered);
         canvasPanel.setWorkers(filtered);
     }
 
-    // ИСПРАВЛЕНО: без блокировки UI через Task
+
     private void refreshCollection() {
         showSuccess(localization.get("status.loading"));
         Task<List<Worker>> task = new Task<>() {
@@ -302,7 +458,10 @@ public class MainView {
                 for (int i = 0; i < 3; i++) {
                     List<Worker> workers = clientService.loadCollection();
                     if (workers != null) return workers;
-                    try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException ignored) {
+                    }
                 }
                 return null;
             }
@@ -327,8 +486,11 @@ public class MainView {
         WorkerDialog dialog = new WorkerDialog(localization, session, null);
         dialog.showAndWait().ifPresent(worker -> {
             var response = clientService.addWorker(worker);
-            if (response.isSuccess()) { refreshCollection(); showSuccess(localization.get("success.add")); }
-            else showError(response.getMessage());
+            System.out.println(response.getMessage());
+            if (response.isSuccess()) {
+                refreshCollection();
+                showSuccess(localization.get("success.add"));
+            } else showError(response.getMessage());
         });
     }
 
@@ -336,8 +498,10 @@ public class MainView {
         WorkerDialog dialog = new WorkerDialog(localization, session, null);
         dialog.showAndWait().ifPresent(worker -> {
             var response = clientService.addIfMax(worker);
-            if (response.isSuccess()) { refreshCollection(); showSuccess(localization.get("success.add_if_max")); }
-            else showError(response.getMessage());
+            if (response.isSuccess()) {
+                refreshCollection();
+                showSuccess(localization.get("success.add_if_max"));
+            } else showError(response.getMessage());
         });
     }
 
@@ -346,8 +510,10 @@ public class MainView {
         dialog.showAndWait().ifPresent(updated -> {
             if (worker.getId() != null) {
                 var response = clientService.updateWorker(worker.getId(), updated);
-                if (response.isSuccess()) { refreshCollection(); showSuccess(localization.get("success.update")); }
-                else showError(response.getMessage());
+                if (response.isSuccess()) {
+                    refreshCollection();
+                    showSuccess(localization.get("success.update"));
+                } else showError(response.getMessage());
             }
         });
     }
@@ -361,25 +527,23 @@ public class MainView {
     private void handleRemove() {
         Worker selected = tableView.getSelectionModel().getSelectedItem();
         if (selected != null) {
-            if (InputDialogs.showConfirmationDialog(
-                    localization.get("dialog.confirm"),
-                    localization.get("dialog.remove.confirm"),
-                    localization.get("worker.id") + ": " + selected.getId())) {
+            if (InputDialogs.showConfirmationDialog(localization.get("dialog.confirm"), localization.get("dialog.remove.confirm"), localization.get("worker.id") + ": " + selected.getId())) {
                 var response = clientService.removeById(selected.getId());
-                if (response.isSuccess()) { refreshCollection(); showSuccess(localization.get("success.remove")); }
-                else showError(response.getMessage());
+                if (response.isSuccess()) {
+                    refreshCollection();
+                    showSuccess(localization.get("success.remove"));
+                } else showError(response.getMessage());
             }
         } else showError(localization.get("error.select.worker"));
     }
 
     private void handleClear() {
-        if (InputDialogs.showConfirmationDialog(
-                localization.get("dialog.confirm"),
-                localization.get("dialog.clear.confirm"),
-                localization.get("dialog.clear.warning"))) {
+        if (InputDialogs.showConfirmationDialog(localization.get("dialog.confirm"), localization.get("dialog.clear.confirm"), localization.get("dialog.clear.warning"))) {
             var response = clientService.clearCollection();
-            if (response.isSuccess()) { refreshCollection(); showSuccess(localization.get("success.clear")); }
-            else showError(response.getMessage());
+            if (response.isSuccess()) {
+                refreshCollection();
+                showSuccess(localization.get("success.clear"));
+            } else showError(response.getMessage());
         }
     }
 
@@ -387,39 +551,45 @@ public class MainView {
         WorkerDialog dialog = new WorkerDialog(localization, session, null);
         dialog.showAndWait().ifPresent(worker -> {
             var response = clientService.removeLower(worker);
-            if (response.isSuccess()) { refreshCollection(); showSuccess(localization.get("success.remove_lower")); }
-            else showError(response.getMessage());
+            if (response.isSuccess()) {
+                refreshCollection();
+                showSuccess(localization.get("success.remove_lower"));
+            } else showError(response.getMessage());
         });
     }
 
     private void handleRemoveByStatus() {
-        Status status = InputDialogs.showChoiceDialog(
-                localization.get("dialog.confirm"),
-                localization.get("button.remove_by_status"),
-                localization.get("worker.status"),
-                java.util.Arrays.asList(Status.values())
-        );
+        Status status = InputDialogs.showChoiceDialog(localization.get("dialog.confirm"), localization.get("button.remove_by_status"), localization.get("worker.status"), java.util.Arrays.asList(Status.values()));
         if (status != null) {
             var response = clientService.removeAnyByStatus(status);
-            if (response.isSuccess()) { refreshCollection(); showSuccess(localization.get("success.remove_by_status")); }
-            else showError(response.getMessage());
+            if (response.isSuccess()) {
+                refreshCollection();
+                showSuccess(localization.get("success.remove_by_status"));
+            } else showError(response.getMessage());
         }
     }
 
-    private void handlePrintDescending() {
-        var response = clientService.printDescending();
-        if (response.isSuccess() && response.getData() != null) {
-            @SuppressWarnings("unchecked")
-            List<Worker> workers = (List<Worker>) response.getData();
-            infoArea.setText(workers.stream()
-                    .map(w -> CollectionUtils.formatWorker(w, localization))
-                    .reduce("", (a, b) -> a + b));
-        }
-    }
 
-    private void showHistory() {
-        var response = clientService.history();
-        if (response.isSuccess()) infoArea.setText(response.getMessage());
+    private void handleHelp() {
+        StringBuilder helpText = new StringBuilder();
+        helpText.append(localization.get("help.add")).append("\n\n");
+        helpText.append(localization.get("help.add_if_max")).append("\n\n");
+        helpText.append(localization.get("help.update")).append("\n\n");
+        helpText.append(localization.get("help.remove")).append("\n\n");
+        helpText.append(localization.get("help.clear")).append("\n\n");
+        helpText.append(localization.get("help.refresh")).append("\n\n");
+        helpText.append(localization.get("help.info")).append("\n\n");
+        helpText.append(localization.get("help.removelower")).append("\n\n");
+        helpText.append(localization.get("help.remove_by_status")).append("\n\n");
+        helpText.append(localization.get("help.logout")).append("\n\n");
+
+        InputDialogs.showInfoDialog(
+                localization.get("dialog.help"),
+                localization.get("button.help"),
+
+                helpText.toString()
+        );
+
     }
 
     private void showInfo() {
@@ -427,29 +597,19 @@ public class MainView {
         if (response.isSuccess()) infoArea.setText(response.getMessage());
     }
 
-    private void showHelp() {
-        InputDialogs.showInfoDialog(
-                localization.get("button.help"),
-                localization.get("help.title"),
-                localization.get("help.text")
-        );
-    }
 
     private void showWorkerInfo(Worker worker) {
         infoArea.setText(CollectionUtils.formatWorker(worker, localization));
     }
 
     private void handleLogout() {
-        if (InputDialogs.showConfirmationDialog(
-                localization.get("dialog.confirm"),
-                localization.get("dialog.logout"),
-                localization.get("dialog.logout.confirm"))) {
+        if (InputDialogs.showConfirmationDialog(localization.get("dialog.confirm"), localization.get("dialog.logout"), localization.get("dialog.logout.confirm"))) {
             session.clear();
             networkClient.close();
             try {
                 NetworkClient newClient = new NetworkClient("localhost", 2222);
                 Session newSession = new Session();
-                Localization newLoc = new Localization();
+                localization newLoc = new localization();
                 new AuthView(stage, newClient, newLoc, newSession).show();
             } catch (Exception e) {
                 showError("Failed to reconnect: " + e.getMessage());
@@ -470,13 +630,10 @@ public class MainView {
         StringBuilder sb = new StringBuilder();
         sb.append(localization.get("info.total")).append(": ").append(workers.size()).append("\n");
         if (!workers.isEmpty()) {
-            long uniqueOwners = workers.stream()
-                    .map(Worker::getOwnerLogin).filter(java.util.Objects::nonNull).distinct().count();
+            long uniqueOwners = workers.stream().map(Worker::getOwnerLogin).filter(java.util.Objects::nonNull).distinct().count();
             sb.append(localization.get("info.owners")).append(": ").append(uniqueOwners).append("\n");
-            double avg = workers.stream()
-                    .mapToDouble(w -> w.getSalary() != null ? w.getSalary() : 0).average().orElse(0);
-            sb.append(localization.get("info.avg_salary")).append(": ")
-                    .append(String.format("%.2f", avg)).append("\n");
+            double avg = workers.stream().mapToDouble(w -> w.getSalary() != null ? w.getSalary() : 0).average().orElse(0);
+            sb.append(localization.get("info.avg_salary")).append(": ").append(String.format("%.2f", avg)).append("\n");
         }
         infoArea.setText(sb.toString());
         statusLabel.setText(localization.get("status.ready"));

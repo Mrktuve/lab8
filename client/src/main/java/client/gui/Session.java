@@ -24,10 +24,6 @@ public class Session {
         this.password = password;
     }
 
-    public boolean isLoggedIn() {
-        return login != null && !login.isEmpty();
-    }
-
     public void clear() {
         this.login = null;
         this.password = null;

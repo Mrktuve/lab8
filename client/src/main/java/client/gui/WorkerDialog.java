@@ -1,23 +1,25 @@
 package client.gui;
 
+import client.gui.localization.localization;
 import common.model.*;
 import common.enums.*;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class WorkerDialog extends Dialog<Worker> {
-    private final Localization localization;
-    private final Session session;  // ← ДОБАВЛЕНО
+    private final localization localization;
+    private final Session session;
     private final boolean editMode;
 
     private TextField nameField;
     private TextField xField;
     private TextField yField;
     private TextField salaryField;
-    private TextField passportIDField;  // ← ДОБАВЛЕНО
+    private TextField passportIDField;
     private DatePicker startDatePicker;
     private DatePicker endDatePicker;
     private ComboBox<Status> statusComboBox;
@@ -25,67 +27,58 @@ public class WorkerDialog extends Dialog<Worker> {
     private ComboBox<HairColor> hairColorComboBox;
     private ComboBox<Country> nationalityComboBox;
 
-    // ИСПРАВЛЕНО: добавлен параметр Session
-    public WorkerDialog(Localization localization, Session session, Worker workerToEdit) {
+
+    public WorkerDialog(localization localization, Session session, Worker workerToEdit) {
         this.localization = localization;
-        this.session = session;  // ← ДОБАВЛЕНО
+        this.session = session;
         this.editMode = (workerToEdit != null);
 
-        setTitle(editMode ? localization.get("worker.dialog.edit.title")
-                : localization.get("worker.dialog.add.title"));
-        setHeaderText(editMode ? localization.get("worker.dialog.edit.header")
-                : localization.get("worker.dialog.add.header"));
+
+        setTitle(editMode ? localization.get("worker.dialog.edit.title") : localization.get("worker.dialog.add.title"));
+        setHeaderText(editMode ? localization.get("worker.dialog.edit.header") : localization.get("worker.dialog.add.header"));
 
         initFields();
         createButtonTypes();
         createLayout(workerToEdit);
 
         setResultConverter(buttonType -> {
-            if (buttonType == ButtonType.OK) {
-                return createWorkerFromFields(workerToEdit);
+
+            if (buttonType.getButtonData() == ButtonBar.ButtonData.OK_DONE) {
+                Worker worker = createWorkerFromFields(workerToEdit);
+                return worker;
             }
+
             return null;
         });
     }
 
     private void initFields() {
         nameField = new TextField();
-        nameField.setPromptText(localization.get("worker.name"));
 
         xField = new TextField();
-        xField.setPromptText("X");
 
         yField = new TextField();
-        yField.setPromptText("Y");
 
         salaryField = new TextField();
-        salaryField.setPromptText(localization.get("worker.salary"));
 
-        // ← ДОБАВЛЕНО: поле для passportID
         passportIDField = new TextField();
-        passportIDField.setPromptText(localization.get("person.passportID"));
 
         startDatePicker = new DatePicker();
-        startDatePicker.setPromptText(localization.get("worker.startDate"));
 
         endDatePicker = new DatePicker();
-        endDatePicker.setPromptText(localization.get("worker.endDate"));
 
         statusComboBox = new ComboBox<>();
         statusComboBox.getItems().addAll(Status.values());
-        statusComboBox.setPromptText(localization.get("worker.status"));
 
         eyeColorComboBox = new ComboBox<>();
         eyeColorComboBox.getItems().addAll(EyeColor.values());
-        eyeColorComboBox.setPromptText(localization.get("person.eyeColor"));
 
         hairColorComboBox = new ComboBox<>();
         hairColorComboBox.getItems().addAll(HairColor.values());
-        hairColorComboBox.setPromptText(localization.get("person.hairColor"));
 
         nationalityComboBox = new ComboBox<>();
         nationalityComboBox.getItems().addAll(Country.values());
-        nationalityComboBox.setPromptText(localization.get("person.nationality"));
+
     }
 
     private void createButtonTypes() {
@@ -127,7 +120,6 @@ public class WorkerDialog extends Dialog<Worker> {
         personLabel.setStyle("-fx-font-weight: bold;");
         grid.add(personLabel, 0, row++, 2, 1);
 
-        // ← ДОБАВЛЕНО: поле passportID
         grid.add(new Label(localization.get("person.passportID") + ":"), 0, row);
         grid.add(passportIDField, 1, row++);
 
@@ -170,7 +162,7 @@ public class WorkerDialog extends Dialog<Worker> {
         statusComboBox.setValue(worker.getStatus());
 
         if (worker.getPerson() != null) {
-            // ← ДОБАВЛЕНО: заполнить passportID
+
             if (worker.getPerson().getPassportID() != null) {
                 passportIDField.setText(worker.getPerson().getPassportID());
             }
@@ -191,8 +183,7 @@ public class WorkerDialog extends Dialog<Worker> {
             long y = yField.getText().trim().isEmpty() ? 0L : Long.parseLong(yField.getText().trim());
             Coordinates coordinates = new Coordinates(x, y);
 
-            Double salary = salaryField.getText().trim().isEmpty() ? null :
-                    Double.parseDouble(salaryField.getText().trim().replace(",", "."));
+            Double salary = salaryField.getText().trim().isEmpty() ? null : Double.parseDouble(salaryField.getText().trim().replace(",", "."));
             if (salary == null || salary <= 0) {
                 throw new IllegalArgumentException(localization.get("error.invalid.salary"));
             }
@@ -209,49 +200,22 @@ public class WorkerDialog extends Dialog<Worker> {
             Status status = statusComboBox.getValue();
 
             Person person = null;
-            if (eyeColorComboBox.getValue() != null ||
-                    hairColorComboBox.getValue() != null ||
-                    nationalityComboBox.getValue() != null ||
-                    !passportIDField.getText().trim().isEmpty()) {  // ← ДОБАВЛЕНО: проверка passportID
-
-                // ИСПРАВЛЕНО: передаем passportID в конструктор Person
-                person = new Person(
-                        passportIDField.getText().trim(),  // ← ДОБАВЛЕНО
-                        eyeColorComboBox.getValue(),
-                        hairColorComboBox.getValue(),
-                        nationalityComboBox.getValue()
-                );
+            if (eyeColorComboBox.getValue() != null || hairColorComboBox.getValue() != null || nationalityComboBox.getValue() != null || !passportIDField.getText().trim().isEmpty()) {
+                person = new Person(passportIDField.getText().trim(),
+                        eyeColorComboBox.getValue(), hairColorComboBox.getValue(), nationalityComboBox.getValue());
             }
 
-            // ИСПРАВЛЕНО: используем session.getLogin() вместо "temp"
-            String ownerLogin = (existingWorker != null)
-                    ? existingWorker.getOwnerLogin()
-                    : session.getLogin();
+            String ownerLogin = (existingWorker != null) ? existingWorker.getOwnerLogin() : session.getLogin();
 
-            return new Worker(
-                    name,
-                    coordinates,
-                    salary,
-                    startDateTime,
-                    endDateTime,
-                    status,
-                    person,
-                    ownerLogin
-            );
+            return new Worker(name, coordinates, salary, startDateTime, endDateTime, status, person, ownerLogin);
 
         } catch (NumberFormatException e) {
-            InputDialogs.showErrorDialog(
-                    localization.get("dialog.error"),
-                    localization.get("error.invalid.number"),
-                    e.getMessage()
-            );
+            InputDialogs.showErrorDialog(localization.get("dialog.error"), localization.get("error.invalid.number"), e.getMessage());
+            e.printStackTrace();
             return null;
         } catch (IllegalArgumentException e) {
-            InputDialogs.showErrorDialog(
-                    localization.get("dialog.error"),
-                    localization.get("dialog.error"),
-                    e.getMessage()
-            );
+            InputDialogs.showErrorDialog(localization.get("dialog.error"), localization.get("dialog.error"), e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }

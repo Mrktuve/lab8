@@ -22,6 +22,7 @@ public class CollectionManager {
         collection.addAll(workerDAO.loadCollection()); // забирает все данные из БД
         System.out.println("Collection loaded: " + collection.size());
     }
+
     //возвращает ссылку на коллекцию
     public ConcurrentLinkedDeque<Worker> getCollection() {
         return collection;
@@ -35,10 +36,13 @@ public class CollectionManager {
         }
         return success;
     }
+
     // создает последовательность, сортирует по айди, находит первый, но если ничего не найдено, то null
     public Worker findById(long id) {
-        return collection.stream().filter(w -> w.getId() == id).findFirst().orElse(null);
+        return collection.stream().filter(w -> w.getId() != null && w.getId() == id).findFirst().orElse(null);
+
     }
+
     // находит обьект, если нет, то вернет false
     public boolean removeById(long id, String login) {
         Worker worker = findById(id);
@@ -70,6 +74,7 @@ public class CollectionManager {
 
         newWorker.setId(id);
         newWorker.setOwnerLogin(login);
+        newWorker.setCreationDate(oldWorker.getCreationDate());
 
         boolean success = workerDAO.updateWorker(id, newWorker, login);
         if (success) {
@@ -82,20 +87,17 @@ public class CollectionManager {
     public int removeLower(Worker compareWorker, String login) {
         int removed = workerDAO.removeLower(compareWorker.getSalary(), login);
         if (removed > 0) {
-            collection.removeIf(w ->
-                    w.getSalary() < compareWorker.getSalary()
-                            && w.getOwnerLogin().equals(login)
-            );
+            collection.removeIf(w -> w.getSalary() < compareWorker.getSalary() && w.getOwnerLogin().equals(login));
         }
         return removed;
     }
+
     public boolean removeAnyByStatus(String status, String login) {
         boolean success = workerDAO.removeAnyByStatus(status, login);
         if (success) {
             // удаляем первый найденный с таким статусом
             for (Worker w : collection) {
-                if (w.getStatus().name().equalsIgnoreCase(status)
-                        && w.getOwnerLogin().equals(login)) {
+                if (w.getStatus().name().equalsIgnoreCase(status) && w.getOwnerLogin().equals(login)) {
                     collection.remove(w);
                     break;
                 }

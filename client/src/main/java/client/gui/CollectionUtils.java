@@ -1,9 +1,9 @@
 package client.gui;
 
+import client.gui.localization.localization;
 import common.model.*;
 import common.enums.*;
 
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
@@ -19,7 +19,7 @@ public class CollectionUtils {
     /**
      * Форматирует объект Worker в читаемую строку для вывода в TextArea или консоль.
      */
-    public static String formatWorker(Worker worker, Localization loc) {
+    public static String formatWorker(Worker worker, localization loc) {
         if (worker == null) return "";
 
         StringBuilder sb = new StringBuilder();
@@ -67,7 +67,7 @@ public class CollectionUtils {
     /**
      * Форматирует статус работника с учетом локализации.
      */
-    private static String formatStatus(Status status, Localization loc) {
+    private static String formatStatus(Status status, localization loc) {
         return switch (status) {
             case RECOMMENDED_FOR_PROMOTION -> loc.get("status.recommended_for_promotion");
             case FIRED -> loc.get("status.fired");

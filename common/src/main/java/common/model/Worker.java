@@ -13,6 +13,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class Worker implements Serializable {
+    private static final DateTimeFormatter FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private String name;
     private Long id; // генерируется сервером
     private String ownerLogin; // не null, не пустой
@@ -23,8 +25,6 @@ public class Worker implements Serializable {
     private LocalDateTime endDate; // может быть null
     private Status status; // может быть null
     private Person person; // может быть null
-    private static final DateTimeFormatter FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     public Worker(String name,
                   Coordinates coordinates,
@@ -34,7 +34,6 @@ public class Worker implements Serializable {
                   Status status,
                   Person person,
                   String ownerLogin) {
-
         if (name == null || name.isEmpty()) {
             throw new IllegalArgumentException("Name cannot be null or empty");
         }
@@ -69,7 +68,9 @@ public class Worker implements Serializable {
             throw new RuntimeException(e);
         }
 
+        // ИСПРАВЛЕНО: читаем passportID из БД
         Person person = new Person(
+                rs.getString("person_passport_id"),  // ← ДОБАВЛЕНО
                 EyeColor.valueOf(rs.getString("person_eye_color")),
                 HairColor.valueOf(rs.getString("person_hair_color")),
                 Country.valueOf(rs.getString("person_nationality"))
@@ -88,17 +89,7 @@ public class Worker implements Serializable {
 
         worker.setId(rs.getLong("id"));
         worker.setCreationDate(rs.getTimestamp("creation_date").toLocalDateTime());
-
         return worker;
-    }
-
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setCreationDate(LocalDateTime creationDate) {
-        this.creationDate = creationDate;
     }
 
     public String getOwnerLogin() {
@@ -108,8 +99,13 @@ public class Worker implements Serializable {
     public void setOwnerLogin(String ownerLogin) {
         this.ownerLogin = ownerLogin;
     }
+
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getName() {
@@ -122,6 +118,10 @@ public class Worker implements Serializable {
 
     public LocalDateTime getCreationDate() {
         return creationDate;
+    }
+
+    public void setCreationDate(LocalDateTime creationDate) {
+        this.creationDate = creationDate;
     }
 
     public Double getSalary() {
@@ -150,7 +150,7 @@ public class Worker implements Serializable {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", coordinates=" + coordinates +
-                ", creationDate=" + creationDate.format(FORMATTER) +
+                ", creationDate=" + (creationDate != null ? creationDate.format(FORMATTER) : "null") +
                 ", salary=" + salary +
                 ", startDate=" + (startDate != null ? startDate.format(FORMATTER) : "null") +
                 ", endDate=" + (endDate != null ? endDate.format(FORMATTER) : "null") +
